@@ -1,8 +1,7 @@
-@inherits Microsoft.AspNetCore.Components.Forms.InputText
+@inherits Microsoft.AspNetCore.Components.Forms.InputTextArea
 
 <span>@length.ToString()/@maxLength.ToString()</span> <br/>
-<input @attributes="@AdditionalAttributes" class="@CssClass default-input @inputClass" @bind="@CurrentValueAsString"  @bind:event="oninput" @onkeyup="countChars" maxlength="@maxLength" />
-
+<textarea @attributes="@AdditionalAttributes" class="@CssClass default-input @inputClass" @bind="@CurrentValueAsString"  @bind:event="oninput" @onkeyup="countChars" maxlength="@maxLength"></textarea>
 
 @code {
     // פרמטר לקבלת אורך מחרוזת מינימלי
@@ -36,7 +35,7 @@
     }
     
     protected override void OnParametersSet()
-    // הפונקציה הזאת תקרה בזמן שיש מידע שמגיע משרת
+        // הפונקציה הזאת תקרה בזמן שיש מידע שמגיע משרת
     {
         if (CurrentValueAsString != null)
         {

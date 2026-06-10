@@ -1,193 +1,281 @@
 @page "/EditGame/{gameIdToEdit:int}"
 @using AuthTemplate.Shared.Games
-@using AuthTemplate.Shared.Games;
-@inject HttpClient Http;
-@inject NavigationManager Nav;
+@using AuthTemplate.Shared.EditGameContentDTOs
+@inject HttpClient Http
+@inject NavigationManager Nav
 
 <button @onclick='() => Nav.NavigateTo("/GamesList")'>חזרה למשחקים שלי</button>
 
-<h2>
-    עריכת משחק 
-    ״ 
-    @gameToEdit.GameName
-    ״
-</h2>
+@if (String.IsNullOrEmpty(displayName))
+{
+    <h2>עריכת משחק</h2>
+}
+else
+{
+<h2>עריכת משחק ״@displayName״</h2>
+}
 
-<h3>עריכת הגדרות משחק</h3>
 
-<EditForm Model="gameToEdit" OnValidSubmit="CreateGame">
-    <DataAnnotationsValidator />
-    <div>
-        <label>שם משחק:
-            <CustomInputText @bind-Value="gameToEdit.GameName"
-                             placeholder="שם משחק..."
-                             minLength="2"
-                             maxLength="20"
-                             @bind-Value:after="CheckCanSave" />
-        </label>
-    </div>
-    <br/>
-    <div>
-        <label>זמן למיון פריט בכל תור</label>
-        <InputNumber @bind-Value="gameToEdit.RoundTime"
-                     step="5"
-                     min="20"
-                     max="60"
-                     disabled="@noLimit" @oninput="CheckCanSave" />
-        <b> או </b>
-        <label>
-            @* מריץ את הערך החדש ולא הישן *@
-            <InputCheckbox @bind-Value="noLimit" @bind-Value:after="OnNoLimitAndCheckSave" />
-            ללא הגבלה
-        </label>
-    </div>
-    <br/>
-    <div>
-        <label>הנחיות העורך: 
-            <InputTextArea @bind-Value="gameToEdit.Instructions"  @bind-Value:after="CheckCanSave" />
-        </label>
-    </div>
-    <ValidationMessage For="@(() => gameToEdit.GameName)" />
+@* ──────────────── הגדרות משחק ───────────────── *@
+
+<AccordionSection Title="עריכת הגדרות משחק" IsOpen="@isSettingsOpen">
+    <EditForm Model="gameToEdit" OnValidSubmit="SaveGameSettings">
+        <DataAnnotationsValidator />
+        <div>
+            <label>שם משחק:
+                <CustomInputText @bind-Value="gameToEdit.GameName"
+                                 placeholder="שם משחק..."
+                                 minLength="1"
+                                 maxLength="20"
+                                 @bind-Value:after="CheckCanSave" />
+            </label>
+        </div>
+        <br />
+        <div>
+            <label>זמן למיון פריט בכל תור</label>
+            <InputNumber @bind-Value="gameToEdit.RoundTime"
+                         step="5"
+                         min="20"
+                         max="60"
+                         disabled="@noLimit"
+                         @bind-Value:after="CheckCanSave" />
+            <b> או </b>
+            <label>
+                <InputCheckbox @bind-Value="noLimit" @bind-Value:after="OnNoLimitAndCheckSave" />
+                ללא הגבלה
+            </label>
+        </div>
+        <br />
+        <div>
+            <label>הנחיות העורך:
+                <CustomInputTextArea @bind-Value="gameToEdit.Instructions"
+                                 placeholder="כתבו הנחיה משלכם"
+                                 minLength="1"
+                                 maxLength="40"
+                                 @bind-Value:after="CheckCanSave" />
+            </label>
+        </div>
+        <ValidationMessage For="@(() => gameToEdit.GameName)" />
+        <br />
+        <input type="submit" value="שמירה" disabled="@(!context.Validate() || !canSave)" />
+        <input type="button" value="ביטול שינויים" disabled="@(!canSave || string.IsNullOrEmpty(originalGame.GameName))" @onclick="CancelChanges"/>
+        @* ביטול שינויים פעיל במידה ונעשו שינויים מהמשחק המקורי, ביצירת משחק חדש ביטול שינויים פעיל רק בשינוי של ההנחיה המקורית *@
+    </EditForm>
 
     <br />
-    <input type="submit" value="שמירה" disabled="@(!context.Validate() || !canSave)" />
-</EditForm> <br/>
-<p>@msg</p>
+    <p>@msg</p>
+</AccordionSection>
 
-@* EDIT GAME HTML: *@
 
-<Accordion Title="עריכת תוכן">
-    <div class="content-section">
+@* ───────────── עריכת התוכן ───────────────── *@
 
-        @* פריטים *@
-        <div class="items-section">
+    <AccordionSection Title="עריכת תוכן" Disabled="@(gameToEdit.ID == 0)" >
+
+        @* ── פריטים  ── *@
+        <div>
             <h4>פריטים</h4>
+
             @if (selectedCategory == null)
             {
                 <p>יש לבחור קטגוריה</p>
+            }
+            else if (selectedCategory.Items == null || selectedCategory.Items.Count == 0)
+            {
+                <p>אין פריטים לקטגוריה זו</p>
             }
             else
             {
                 @foreach (var item in selectedCategory.Items)
                 {
-                    <div class="item-card">
-                        <span>@item.Content</span>
+                    <div>
+                        <label>
+                            <input type="radio"
+                                   name="item-type-@item.ID"
+                                   checked="@(!item.IsImage)"
+                                   @onchange="() => { item.IsImage = false; contentChanged = true; }" />
+                            טקסט
+                        </label>
+                        <label>
+                            <input type="radio"
+                                   name="item-type-@item.ID"
+                                   checked="@item.IsImage"
+                                   @onchange="() => { item.IsImage = true; contentChanged = true; }" />
+                            תמונה
+                        </label>
+
+                        @if (item.IsImage)
+                        {
+                            @if (!string.IsNullOrEmpty(item.Content))
+                            {
+                                <img src="@item.Content" alt="פריט" style="width:80px; height:80px;" />
+                            }
+                            else
+                            {
+                                <span>אין תמונה</span>
+                            }
+                        }
+                        else
+                        {
+                            <input type="text"
+                                   value="@item.Content"
+                                   @oninput="e => { item.Content = e.Value?.ToString(); contentChanged = true; }"
+                                   placeholder="שם פריט..." />
+                        }
                     </div>
                 }
             }
         </div>
 
-        @* קטגוריות *@
-        <div class="categories-section">
+        @* ── קטגוריות ── *@
+        <div>
             <h4>קטגוריות</h4>
+
             @if (categories.Count == 0)
             {
-                <p>אין קטגוריות עדיין, הוסיפי קטגוריה חדשה</p>
+                <p>אין קטגוריות עדיין</p>
             }
             else
             {
-                @foreach (CategoryDTO cat in categories)
+                @foreach (var cat in categories)
                 {
                     <div @onclick="() => selectedCategory = cat">
-                        <span>@cat.Content</span>
+                        <label>
+                            <input type="radio"
+                                   name="cat-type-@cat.ID"
+                                   checked="@(!cat.IsImage)"
+                                   @onchange="() => { cat.IsImage = false; contentChanged = true; }"
+                                   @onclick:stopPropagation="true" />
+                            טקסט
+                        </label>
+                        <label>
+                            <input type="radio"
+                                   name="cat-type-@cat.ID"
+                                   checked="@cat.IsImage"
+                                   @onchange="() => { cat.IsImage = true; contentChanged = true; }"
+                                   @onclick:stopPropagation="true" />
+                            תמונה
+                        </label>
+
+                        @if (cat.IsImage)
+                        {
+                            @if (!string.IsNullOrEmpty(cat.Content))
+                            {
+                                <img src="@cat.Content" alt="קטגוריה" style="width:80px; height:80px;" />
+                            }
+                            else
+                            {
+                                <span>אין תמונה</span>
+                            }
+                        }
+                        else
+                        {
+                            <input type="text"
+                                   value="@cat.Content"
+                                   @oninput="e => { cat.Content = e.Value?.ToString(); contentChanged = true; }"
+                                   @onclick:stopPropagation="true"
+                                   placeholder="שם קטגוריה..." />
+                        }
                     </div>
                 }
             }
         </div>
 
-    </div>
-</Accordion>
+        @* ── כפתור שמור שינויים ── *@
+        <br />
+        <button disabled="@(!contentChanged)" @onclick="SaveContent">שמירת שינויים</button>
+        <p>@contentMsg</p>
+
+    </AccordionSection>
+
 
 @code {
 
-    [Parameter]
-    public int gameIdToEdit { get; set; }
-    // פרמטר שמגיע מהכפתור בעמוד ״המשחקים שלי״
-    // קולטות את המשתנה גם פה וגם דרך הנתיב כint
-    
-    // GAME SETTING VARIABLES //
-    GameToAddDTO gameToEdit = new GameToAddDTO();
-    bool noLimit = false;
-    string msg = "";
-    GameToAddDTO originalGame;
-    bool canSave = false; // כפתור השמירה מתחיל כלא פעיל והופך להיות פעיל רק במידה ויש שינוי
+    // ── פרמטר ── //
+    [Parameter] public int gameIdToEdit { get; set; }
 
-    // EDIT GAME  VARIABLES //
-    List<CategoryDTO> categories = new List<CategoryDTO>();
-    CategoryDTO selectedCategory = null;
-    
-    
+    // ── הגדרות משחק ── //
+    GameToAddDTO gameToEdit = new GameToAddDTO();
+    GameToAddDTO originalGame = new GameToAddDTO();
+    string displayName = ""; // שם המשחק בכותרת — מתעדכן רק אחרי שמירה
+    bool noLimit = false;
+    bool canSave = false;
+    string msg = "";
+    bool isSettingsOpen; // במידה וזה משחק חדש האקורדיון של ההגדרות יהיה כבר פתוח
+
+
+    // ── עריכת תוכן ── //
+    List<CategoryToSave> categories = new List<CategoryToSave>();
+    CategoryToSave selectedCategory = null;
+    bool contentChanged = false;
+    string contentMsg = "";
+
+    // ── טעינה ראשונית ── //
     protected override async Task OnParametersSetAsync()
-    // כאשר הוגדר פרמטר וקיבלנו מספר דרך הנתיב
+        // כאשר הוגדר פרמטר וקיבלנו מספר דרך הנתיב
     {
         if (gameIdToEdit == 0) // אם זה משחק חדש
         {
-        gameToEdit.ID = gameIdToEdit; 
-        gameToEdit = new GameToAddDTO();
-        originalGame = new GameToAddDTO();
+            gameToEdit = new GameToAddDTO();
+            originalGame = new GameToAddDTO();
+            isSettingsOpen = true;
         }
-        else if (gameIdToEdit > 0) // אם זה משחק קיים 
+        else if (gameIdToEdit > 0) // אם זה משחק קיים
         {
-            var gameFromServer = await Http.GetAsync($"api/Games/GetGame/{gameIdToEdit}");
-            if (gameFromServer.IsSuccessStatusCode)  // הבאת הנתונים של המשחק מבסיס הנתונים
+            isSettingsOpen = false;
+            // טעינת הגדרות משחק
+            var gameRes = await Http.GetAsync($"api/Games/GetGame/{gameIdToEdit}");
+            if (gameRes.IsSuccessStatusCode)
             {
-                gameToEdit = await gameFromServer.Content.ReadFromJsonAsync<GameToAddDTO>();
-                if (gameToEdit.RoundTime == 0)
-                {
-                    noLimit = true; // אם הנתון של ללא הגבלה מסומן אז גם הצ׳ק בוקס צריך להופיע מסומן
-                }
+                gameToEdit = await gameRes.Content.ReadFromJsonAsync<GameToAddDTO>();
 
-                originalGame = new GameToAddDTO 
+                if (gameToEdit.RoundTime == 0)
+                    noLimit = true;
+                // אם הנתון של ללא הגבלה מסומן אז גם הצ׳ק בוקס צריך להופיע מסומן
+                
+
+                originalGame = new GameToAddDTO
                     //  כדי לבדוק אם יש שינויים בתיבות הטקסט נעשה מופע של משחק מקורי, בעתיד נשתמש בו גם ל״ביטול שינויים״
                 {
                     GameName = gameToEdit.GameName,
                     RoundTime = gameToEdit.RoundTime,
                     Instructions = gameToEdit.Instructions
                 };
+                displayName = gameToEdit.GameName; // כותרת הדף — לא תשתנה עד שמירה
             }
 
-            await LoadCategories(); // קריאה לפונקציה של טעינת הקטגוריות ממשחק קיים
+            // טעינת קטגוריות + פריטים
+            await LoadGameContent();
         }
     }
-    
-    void SelectCategory(CategoryDTO cat) // בלחיצה על קטגוריה מסויימת הקטגוריה תישמר בתוך משתנה
+
+    async Task LoadGameContent()
     {
-        selectedCategory = cat;
-    }
-    
-    async Task LoadCategories() // טעינת הקטגוריות מהשרת 
-    {
-        var res = await Http.GetAsync($"api/Games/GetCategories/{gameIdToEdit}");
+        var res = await Http.GetAsync($"api/Games/getGameContent/{gameIdToEdit}");
         if (res.IsSuccessStatusCode)
         {
-            categories = await res.Content.ReadFromJsonAsync<List<CategoryDTO>>();
+            var fullGame = await res.Content.ReadFromJsonAsync<FullGameToSave>();
+            categories = fullGame?.Categories ?? new List<CategoryToSave>();
         }
     }
+
+    // ── הגדרות משחק: שמירה ── //
     void CheckCanSave()
     {
-        // פונקציה שבודקת האם בוצעו שינויים בתיבות הטקסט / מספר 
-        // במידה ובוצעו שינויים כפתור שמירה יהיה פעיל ובמידה ולא יהיה לא פעיל
-        if (gameToEdit.GameName != originalGame.GameName || gameToEdit.RoundTime != originalGame.RoundTime ||
-        gameToEdit.Instructions != originalGame.Instructions)
-        {
-        canSave = true;
-        }
-        else
-        {
-        canSave = false;
-        }
-        
+        canSave = gameToEdit.GameName != originalGame.GameName
+                  || gameToEdit.RoundTime != originalGame.RoundTime
+                  || gameToEdit.Instructions != originalGame.Instructions;
     }
-    
+
     void OnNoLimitChanged()
+    // בשינוי של הצ׳קבוקס זמן לכל תור
     {
         if (noLimit)
         {
-        gameToEdit.RoundTime = 0;
+            gameToEdit.RoundTime = 0;
         }
         else
         {
-        gameToEdit.RoundTime = 30; // ברירת מחדל כשמבטלים
+            gameToEdit.RoundTime = 30; // ברירת מחדל כשמבטלים
         }
     }
 
@@ -197,8 +285,8 @@
         CheckCanSave();
     }
 
-    async Task CreateGame()
-    // בעת לחיצה על כפתור ״שמירה״ הפונקציה תפעל
+    async Task SaveGameSettings()
+    // בלחיצה על ״שמירה״
     {
         if (gameToEdit.ID == 0)
             // אם זה משחק חדש תקרא לפונקציה בשרת שיוצרת משחק חדש
@@ -206,20 +294,63 @@
             var newGameRes = await Http.PostAsJsonAsync("api/Games/addGame", gameToEdit);
             if (newGameRes.IsSuccessStatusCode)
             {
-                GameToTableDTO newGame = newGameRes.Content.ReadFromJsonAsync<GameToTableDTO>().Result;
+                var newGame = await newGameRes.Content.ReadFromJsonAsync<GameToTableDTO>();
                 gameToEdit.ID = newGame.ID;
+                displayName = gameToEdit.GameName;
                 msg = "המשחק נוצר בהצלחה";
+                canSave = false;
             }
         }
-        else if (gameToEdit.ID > 0)
-            // אם זה משחק קיים תעשכן את הפרטים בהתאם
+        else
+            // אם זה משחק קיים תעדכן את הפרטים בהתאם
         {
-            var editGameRes = await Http.PostAsJsonAsync("api/Games/UpdateGame", gameToEdit);
-            if (editGameRes.IsSuccessStatusCode)
+            var editRes = await Http.PostAsJsonAsync("api/Games/UpdateGame", gameToEdit);
+            if (editRes.IsSuccessStatusCode)
             {
+                displayName = gameToEdit.GameName; // עדכון הכותרת רק אחרי שמירה
                 msg = "המשחק עודכן בהצלחה";
+                canSave = false;
+                originalGame = new GameToAddDTO
+                {
+                    GameName = gameToEdit.GameName,
+                    RoundTime = gameToEdit.RoundTime,
+                    Instructions = gameToEdit.Instructions
+                };
             }
-            
+        }
+    }
+
+    void CancelChanges()
+    // בלחיצה על ביטול שינויים נרצה להחזיר את הפרטים של המשחק האחרון שנשמר
+    {
+        gameToEdit = new GameToAddDTO
+        {
+            ID = gameToEdit.ID, 
+            GameName = originalGame.GameName,
+            RoundTime = originalGame.RoundTime,
+            Instructions = originalGame.Instructions
+        };
+        if (originalGame.RoundTime == 0)
+            noLimit = true;
+        else
+            noLimit = false;
+        canSave = false;
+        msg = "";
+    }
+    
+    // ── שמירת תוכן ── //
+    async Task SaveContent()
+    {
+        var fullGame = new FullGameToSave { Categories = categories };
+        var res = await Http.PostAsJsonAsync("api/Games/SaveContent", fullGame);
+        if (res.IsSuccessStatusCode)
+        {
+            contentMsg = "השינויים נשמרו בהצלחה";
+            contentChanged = false;
+        }
+        else
+        {
+            contentMsg = "שגיאה בשמירה";
         }
     }
 }

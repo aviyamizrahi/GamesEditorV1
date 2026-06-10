@@ -5,7 +5,7 @@ var e=!1;const t=async()=>WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,
   "mainAssemblyName": "AuthTemplate.Client",
   "applicationEnvironment": "Development",
   "resources": {
-    "hash": "sha256-fMJpG2JrNulxEPGPyv7N+BhaLaf9cCL15qTvrzhRybE=",
+    "hash": "sha256-HNB+GJrghHQ7iw4mnQL9U7/Z8z2bzZimxDx6UtkndDc=",
     "jsModuleNative": [
       {
         "name": "dotnet.native.69poregybn.js"
@@ -1260,8 +1260,8 @@ var e=!1;const t=async()=>WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,
       },
       {
         "virtualPath": "AuthTemplate.Client.wasm",
-        "name": "AuthTemplate.Client.icu8rhlszm.wasm",
-        "integrity": "sha256-ono1HCXE0+87+WT6GEYrj0/yhRnzF/Gl2C1q2eJAsGA=",
+        "name": "AuthTemplate.Client.7oc3cayrd3.wasm",
+        "integrity": "sha256-Gcn1/dlJa46cngwNeZXBFyYSHCKAEnvQglO8+FlTDpA=",
         "cache": "force-cache"
       }
     ],
@@ -1274,8 +1274,8 @@ var e=!1;const t=async()=>WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,
       },
       {
         "virtualPath": "AuthTemplate.Client.pdb",
-        "name": "AuthTemplate.Client.ctbf6cj7rq.pdb",
-        "integrity": "sha256-cLCWiiVtnUnYLoWAh+9ypJUa0rer4izU5F35JuY/zzU=",
+        "name": "AuthTemplate.Client.5n5se8wygm.pdb",
+        "integrity": "sha256-b4aBIswrCNjjDP5bB4DQ6gSYG6J8RKY+336+NC+1qZs=",
         "cache": "force-cache"
       }
     ],

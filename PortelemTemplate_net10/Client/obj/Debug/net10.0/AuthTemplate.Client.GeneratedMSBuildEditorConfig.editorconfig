@@ -40,6 +40,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9BY2NvcmRpb25TZWN0aW9uLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
+[/Users/aviyamizrahi/Documents/programing 2/Final Task/PortelemTemplate_net10/Client/Components/CustomInputTextArea.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9DdXN0b21JbnB1dFRleHRBcmVhLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
 [/Users/aviyamizrahi/Documents/programing 2/Final Task/PortelemTemplate_net10/Client/Components/DeleteGame.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9EZWxldGVHYW1lLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
