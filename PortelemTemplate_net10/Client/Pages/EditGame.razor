@@ -1,0 +1,225 @@
+@page "/EditGame/{gameIdToEdit:int}"
+@using AuthTemplate.Shared.Games
+@using AuthTemplate.Shared.Games;
+@inject HttpClient Http;
+@inject NavigationManager Nav;
+
+<button @onclick='() => Nav.NavigateTo("/GamesList")'>חזרה למשחקים שלי</button>
+
+<h2>
+    עריכת משחק 
+    ״ 
+    @gameToEdit.GameName
+    ״
+</h2>
+
+<h3>עריכת הגדרות משחק</h3>
+
+<EditForm Model="gameToEdit" OnValidSubmit="CreateGame">
+    <DataAnnotationsValidator />
+    <div>
+        <label>שם משחק:
+            <CustomInputText @bind-Value="gameToEdit.GameName"
+                             placeholder="שם משחק..."
+                             minLength="2"
+                             maxLength="20"
+                             @bind-Value:after="CheckCanSave" />
+        </label>
+    </div>
+    <br/>
+    <div>
+        <label>זמן למיון פריט בכל תור</label>
+        <InputNumber @bind-Value="gameToEdit.RoundTime"
+                     step="5"
+                     min="20"
+                     max="60"
+                     disabled="@noLimit" @oninput="CheckCanSave" />
+        <b> או </b>
+        <label>
+            @* מריץ את הערך החדש ולא הישן *@
+            <InputCheckbox @bind-Value="noLimit" @bind-Value:after="OnNoLimitAndCheckSave" />
+            ללא הגבלה
+        </label>
+    </div>
+    <br/>
+    <div>
+        <label>הנחיות העורך: 
+            <InputTextArea @bind-Value="gameToEdit.Instructions"  @bind-Value:after="CheckCanSave" />
+        </label>
+    </div>
+    <ValidationMessage For="@(() => gameToEdit.GameName)" />
+
+    <br />
+    <input type="submit" value="שמירה" disabled="@(!context.Validate() || !canSave)" />
+</EditForm> <br/>
+<p>@msg</p>
+
+@* EDIT GAME HTML: *@
+
+<Accordion Title="עריכת תוכן">
+    <div class="content-section">
+
+        @* פריטים *@
+        <div class="items-section">
+            <h4>פריטים</h4>
+            @if (selectedCategory == null)
+            {
+                <p>יש לבחור קטגוריה</p>
+            }
+            else
+            {
+                @foreach (var item in selectedCategory.Items)
+                {
+                    <div class="item-card">
+                        <span>@item.Content</span>
+                    </div>
+                }
+            }
+        </div>
+
+        @* קטגוריות *@
+        <div class="categories-section">
+            <h4>קטגוריות</h4>
+            @if (categories.Count == 0)
+            {
+                <p>אין קטגוריות עדיין, הוסיפי קטגוריה חדשה</p>
+            }
+            else
+            {
+                @foreach (CategoryDTO cat in categories)
+                {
+                    <div @onclick="() => selectedCategory = cat">
+                        <span>@cat.Content</span>
+                    </div>
+                }
+            }
+        </div>
+
+    </div>
+</Accordion>
+
+@code {
+
+    [Parameter]
+    public int gameIdToEdit { get; set; }
+    // פרמטר שמגיע מהכפתור בעמוד ״המשחקים שלי״
+    // קולטות את המשתנה גם פה וגם דרך הנתיב כint
+    
+    // GAME SETTING VARIABLES //
+    GameToAddDTO gameToEdit = new GameToAddDTO();
+    bool noLimit = false;
+    string msg = "";
+    GameToAddDTO originalGame;
+    bool canSave = false; // כפתור השמירה מתחיל כלא פעיל והופך להיות פעיל רק במידה ויש שינוי
+
+    // EDIT GAME  VARIABLES //
+    List<CategoryDTO> categories = new List<CategoryDTO>();
+    CategoryDTO selectedCategory = null;
+    
+    
+    protected override async Task OnParametersSetAsync()
+    // כאשר הוגדר פרמטר וקיבלנו מספר דרך הנתיב
+    {
+        if (gameIdToEdit == 0) // אם זה משחק חדש
+        {
+        gameToEdit.ID = gameIdToEdit; 
+        gameToEdit = new GameToAddDTO();
+        originalGame = new GameToAddDTO();
+        }
+        else if (gameIdToEdit > 0) // אם זה משחק קיים 
+        {
+            var gameFromServer = await Http.GetAsync($"api/Games/GetGame/{gameIdToEdit}");
+            if (gameFromServer.IsSuccessStatusCode)  // הבאת הנתונים של המשחק מבסיס הנתונים
+            {
+                gameToEdit = await gameFromServer.Content.ReadFromJsonAsync<GameToAddDTO>();
+                if (gameToEdit.RoundTime == 0)
+                {
+                    noLimit = true; // אם הנתון של ללא הגבלה מסומן אז גם הצ׳ק בוקס צריך להופיע מסומן
+                }
+
+                originalGame = new GameToAddDTO 
+                    //  כדי לבדוק אם יש שינויים בתיבות הטקסט נעשה מופע של משחק מקורי, בעתיד נשתמש בו גם ל״ביטול שינויים״
+                {
+                    GameName = gameToEdit.GameName,
+                    RoundTime = gameToEdit.RoundTime,
+                    Instructions = gameToEdit.Instructions
+                };
+            }
+
+            await LoadCategories(); // קריאה לפונקציה של טעינת הקטגוריות ממשחק קיים
+        }
+    }
+    
+    void SelectCategory(CategoryDTO cat) // בלחיצה על קטגוריה מסויימת הקטגוריה תישמר בתוך משתנה
+    {
+        selectedCategory = cat;
+    }
+    
+    async Task LoadCategories() // טעינת הקטגוריות מהשרת 
+    {
+        var res = await Http.GetAsync($"api/Games/GetCategories/{gameIdToEdit}");
+        if (res.IsSuccessStatusCode)
+        {
+            categories = await res.Content.ReadFromJsonAsync<List<CategoryDTO>>();
+        }
+    }
+    void CheckCanSave()
+    {
+        // פונקציה שבודקת האם בוצעו שינויים בתיבות הטקסט / מספר 
+        // במידה ובוצעו שינויים כפתור שמירה יהיה פעיל ובמידה ולא יהיה לא פעיל
+        if (gameToEdit.GameName != originalGame.GameName || gameToEdit.RoundTime != originalGame.RoundTime ||
+        gameToEdit.Instructions != originalGame.Instructions)
+        {
+        canSave = true;
+        }
+        else
+        {
+        canSave = false;
+        }
+        
+    }
+    
+    void OnNoLimitChanged()
+    {
+        if (noLimit)
+        {
+        gameToEdit.RoundTime = 0;
+        }
+        else
+        {
+        gameToEdit.RoundTime = 30; // ברירת מחדל כשמבטלים
+        }
+    }
+
+    void OnNoLimitAndCheckSave()
+    {
+        OnNoLimitChanged();
+        CheckCanSave();
+    }
+
+    async Task CreateGame()
+    // בעת לחיצה על כפתור ״שמירה״ הפונקציה תפעל
+    {
+        if (gameToEdit.ID == 0)
+            // אם זה משחק חדש תקרא לפונקציה בשרת שיוצרת משחק חדש
+        {
+            var newGameRes = await Http.PostAsJsonAsync("api/Games/addGame", gameToEdit);
+            if (newGameRes.IsSuccessStatusCode)
+            {
+                GameToTableDTO newGame = newGameRes.Content.ReadFromJsonAsync<GameToTableDTO>().Result;
+                gameToEdit.ID = newGame.ID;
+                msg = "המשחק נוצר בהצלחה";
+            }
+        }
+        else if (gameToEdit.ID > 0)
+            // אם זה משחק קיים תעשכן את הפרטים בהתאם
+        {
+            var editGameRes = await Http.PostAsJsonAsync("api/Games/UpdateGame", gameToEdit);
+            if (editGameRes.IsSuccessStatusCode)
+            {
+                msg = "המשחק עודכן בהצלחה";
+            }
+            
+        }
+    }
+}

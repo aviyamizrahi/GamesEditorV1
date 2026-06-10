@@ -1,0 +1,60 @@
+<html>
+<head>
+<title>DeleteGame.razor</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #c191ff;}
+.s1 { color: #bdbdbd;}
+.s2 { color: #d0d0d0;}
+.s3 { color: #e1bfff;}
+.s4 { color: #6c95eb;}
+.s5 { color: #d0d0d0;}
+.s6 { color: #85c46c;}
+.s7 { color: #c9a26d;}
+.s8 { color: #f0f0f0;}
+.s9 { color: #ed94c0;}
+.s10 { color: #39cc9b;}
+</style>
+</head>
+<body bgcolor="#262626">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+DeleteGame.razor</font>
+</center></td></tr></table>
+<pre><span class="s0">&lt;h3&gt;</span><span class="s1">DeleteGame</span><span class="s0">&lt;/h3&gt;</span>
+
+
+<span class="s3">@</span><span class="s4">if </span><span class="s1">(</span><span class="s5">IsVisible</span><span class="s1">)</span>
+<span class="s3">{</span>
+    <span class="s0">&lt;div </span><span class="s6">style</span><span class="s7">=&quot;</span><span class="s4">position</span><span class="s1">:</span><span class="s8">fixed</span><span class="s1">; </span><span class="s4">top</span><span class="s1">:</span><span class="s9">0</span><span class="s1">; </span><span class="s4">left</span><span class="s1">:</span><span class="s9">0</span><span class="s1">; </span><span class="s4">width</span><span class="s1">:</span><span class="s9">100</span><span class="s1">%; </span><span class="s4">height</span><span class="s1">:</span><span class="s9">100</span><span class="s1">%; </span>
+                <span class="s4">background-color</span><span class="s1">:</span><span class="s10">rgba</span><span class="s1">(</span><span class="s9">0</span><span class="s1">,</span><span class="s9">0</span><span class="s1">,</span><span class="s9">0</span><span class="s1">,</span><span class="s9">0.5</span><span class="s1">);</span><span class="s7">&quot;</span><span class="s0">&gt;</span>
+        <span class="s0">&lt;div </span><span class="s6">style</span><span class="s7">=&quot;</span><span class="s4">background-color</span><span class="s1">:</span><span class="s8">white</span><span class="s1">; </span><span class="s4">width</span><span class="s1">:</span><span class="s9">400</span><span class="s8">px</span><span class="s1">; </span><span class="s4">margin</span><span class="s1">:</span><span class="s9">200</span><span class="s8">px auto</span><span class="s1">; </span>
+                    <span class="s4">padding</span><span class="s1">:</span><span class="s9">20</span><span class="s8">px</span><span class="s1">; </span><span class="s4">border-radius</span><span class="s1">:</span><span class="s9">10</span><span class="s8">px</span><span class="s1">; </span><span class="s4">text-align</span><span class="s1">:</span><span class="s8">center</span><span class="s1">;</span><span class="s7">&quot;</span><span class="s0">&gt;</span>
+            
+            <span class="s0">&lt;h4&gt; </span><span class="s1">מחיקת משחק </span><span class="s0">&lt;/h4&gt;</span>
+            <span class="s0">&lt;hr/&gt;</span>
+            <span class="s0">&lt;p&gt;</span><span class="s1">האם ברצונך למחוק את המשחק &quot;</span><span class="s3">@</span><span class="s5">GameName</span><span class="s1">&quot;?</span><span class="s0">&lt;/p&gt;</span>
+            <span class="s0">&lt;br/&gt;</span>
+            <span class="s0">&lt;button </span><span class="s3">@</span><span class="s6">onclick</span><span class="s7">=&quot;</span><span class="s2">OnConfirm</span><span class="s7">&quot;</span><span class="s0">&gt;</span><span class="s1">מחק משחק</span><span class="s0">&lt;/button&gt;</span>
+            <span class="s0">&lt;button </span><span class="s3">@</span><span class="s6">onclick</span><span class="s7">=&quot;</span><span class="s2">OnCancel</span><span class="s7">&quot;</span><span class="s0">&gt;</span><span class="s1">ביטול</span><span class="s0">&lt;/button&gt;</span>
+
+        <span class="s0">&lt;/div&gt;</span>
+    <span class="s0">&lt;/div&gt;</span>
+<span class="s3">}</span>
+
+<span class="s3">@</span><span class="s4">code </span><span class="s3">{</span>
+    <span class="s1">[</span><span class="s5">Parameter</span><span class="s1">]</span>
+    <span class="s4">public bool </span><span class="s5">IsVisible </span><span class="s1">{ </span><span class="s5">get</span><span class="s1">; </span><span class="s5">set</span><span class="s1">; }</span>
+
+    <span class="s1">[</span><span class="s5">Parameter</span><span class="s1">]</span>
+    <span class="s4">public string </span><span class="s5">GameName </span><span class="s1">{ </span><span class="s5">get</span><span class="s1">; </span><span class="s5">set</span><span class="s1">; }</span>
+
+    <span class="s1">[</span><span class="s5">Parameter</span><span class="s1">]</span>
+    <span class="s4">public </span><span class="s5">EventCallback OnConfirm </span><span class="s1">{ </span><span class="s5">get</span><span class="s1">; </span><span class="s5">set</span><span class="s1">; }</span>
+
+    <span class="s1">[</span><span class="s5">Parameter</span><span class="s1">]</span>
+    <span class="s4">public </span><span class="s5">EventCallback OnCancel </span><span class="s1">{ </span><span class="s5">get</span><span class="s1">; </span><span class="s5">set</span><span class="s1">; }</span>
+<span class="s3">}</span></pre>
+</body>
+</html>

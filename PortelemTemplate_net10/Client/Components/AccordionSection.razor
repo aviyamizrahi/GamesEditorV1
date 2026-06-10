@@ -1,0 +1,29 @@
+<div class="accordion-section">
+    <div class="accordion-header" @onclick="Toggle">
+        <span>@(IsOpen ? "−" : "+")</span>
+        <span>@Title</span>
+    </div>
+
+    @if (IsOpen)
+    {
+        <div class="accordion-body">
+            @ChildContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public bool IsOpen { get; set; } = false;
+
+    void Toggle()
+    {
+        IsOpen = !IsOpen;
+        // הפעולה ההפוכה 
+    }
+}
+
+@code {
+    
+}
