@@ -6,4 +6,8 @@ public class FullGameToSave
 // בתוך רשימת הקטגוריות יש
 {
     public List<CategoryToSave> Categories { get; set; }
+    public List<int> DeletedCategoryIds { get; set; } 
+    // כדי לדעת אילו קטגוריות יש למחוק - במידה והמשתמש מחק
+    public List<int> DeletedItemIds { get; set; }
+    // גם על הפריטים
 }

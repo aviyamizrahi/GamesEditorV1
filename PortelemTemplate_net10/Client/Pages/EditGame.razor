@@ -3,6 +3,8 @@
 @using AuthTemplate.Shared.EditGameContentDTOs
 @inject HttpClient Http
 @inject NavigationManager Nav
+@inject IJSRuntime JS
+
 
 <button @onclick='() => Nav.NavigateTo("/GamesList")'>חזרה למשחקים שלי</button>
 
@@ -12,9 +14,8 @@
 }
 else
 {
-<h2>עריכת משחק ״@displayName״</h2>
+    <h2>עריכת משחק ״@displayName״</h2>
 }
-
 
 @* ──────────────── הגדרות משחק ───────────────── *@
 
@@ -49,16 +50,16 @@ else
         <div>
             <label>הנחיות העורך:
                 <CustomInputTextArea @bind-Value="gameToEdit.Instructions"
-                                 placeholder="כתבו הנחיה משלכם"
-                                 minLength="1"
-                                 maxLength="40"
-                                 @bind-Value:after="CheckCanSave" />
+                                     placeholder="כתבו הנחיה משלכם"
+                                     minLength="1"
+                                     maxLength="40"
+                                     @bind-Value:after="CheckCanSave" />
             </label>
         </div>
         <ValidationMessage For="@(() => gameToEdit.GameName)" />
         <br />
         <input type="submit" value="שמירה" disabled="@(!context.Validate() || !canSave)" />
-        <input type="button" value="ביטול שינויים" disabled="@(!canSave || string.IsNullOrEmpty(originalGame.GameName))" @onclick="CancelChanges"/>
+        <input type="button" value="ביטול שינויים" disabled="@(!canSave || string.IsNullOrEmpty(originalGame.GameName))" @onclick="CancelChanges" />
         @* ביטול שינויים פעיל במידה ונעשו שינויים מהמשחק המקורי, ביצירת משחק חדש ביטול שינויים פעיל רק בשינוי של ההנחיה המקורית *@
     </EditForm>
 
@@ -66,127 +67,143 @@ else
     <p>@msg</p>
 </AccordionSection>
 
-
 @* ───────────── עריכת התוכן ───────────────── *@
 
-    <AccordionSection Title="עריכת תוכן" Disabled="@(gameToEdit.ID == 0)" >
+<AccordionSection Title="עריכת תוכן" Disabled="@(gameToEdit.ID == 0)">
 
-        @* ── פריטים  ── *@
-        <div>
-            <h4>פריטים</h4>
+    @* ── פריטים ── *@
+    <div>
+        <h4>פריטים</h4>
 
-            @if (selectedCategory == null)
+        @if (selectedCategory == null)
+        {
+            <p>יש לבחור קטגוריה</p>
+        }
+        else
+        {
+            @foreach (var item in selectedCategory.Items)
             {
-                <p>יש לבחור קטגוריה</p>
-            }
-            else if (selectedCategory.Items == null || selectedCategory.Items.Count == 0)
-            {
-                <p>אין פריטים לקטגוריה זו</p>
-            }
-            else
-            {
-                @foreach (var item in selectedCategory.Items)
-                {
-                    <div>
-                        <label>
-                            <input type="radio"
-                                   name="item-type-@item.ID"
-                                   checked="@(!item.IsImage)"
-                                   @onchange="() => { item.IsImage = false; contentChanged = true; }" />
-                            טקסט
-                        </label>
-                        <label>
-                            <input type="radio"
-                                   name="item-type-@item.ID"
-                                   checked="@item.IsImage"
-                                   @onchange="() => { item.IsImage = true; contentChanged = true; }" />
-                            תמונה
-                        </label>
+                var itemInputId = "item_" + item.ID;
+                <div class="item-container" style="border: 1px black; padding: 5px">
+                    <label>
+                        <input type="radio"
+                               name="item-type-@item.ID-@selectedCategory.ID"
+                               checked="@(!item.IsImage)"
+                               @onchange="() => { item.IsImage = false; contentChanged = true; }" />
+                        טקסט
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="item-type-@item.ID-@selectedCategory.ID"
+                               checked="@item.IsImage"
+                               @onchange="() => { item.IsImage = true; contentChanged = true; }" />
+                        תמונה
+                    </label>
 
-                        @if (item.IsImage)
+                    @if (item.IsImage)
+                    {
+                        @if (!string.IsNullOrEmpty(item.Content))
                         {
-                            @if (!string.IsNullOrEmpty(item.Content))
-                            {
-                                <img src="@item.Content" alt="פריט" style="width:80px; height:80px;" />
-                            }
-                            else
-                            {
-                                <span>אין תמונה</span>
-                            }
+                            <img src="uploadedFiles/@item.Content" alt="פריט" style="width:80px; height:80px;" />
+                            <button type="button" @onclick="() => DeleteImage(item, true)"
+                                    @onclick:stopPropagation="true">מחק תמונה</button>
                         }
                         else
                         {
-                            <input type="text"
-                                   value="@item.Content"
-                                   @oninput="e => { item.Content = e.Value?.ToString(); contentChanged = true; }"
-                                   placeholder="שם פריט..." />
+                            <button type="button" @onclick="() => TriggerFileInput(itemInputId)"
+                                    @onclick:stopPropagation="true">העלה תמונה</button>
+                            <InputFile id="@itemInputId" OnChange="(e) => UploadFile(e, item, true)" hidden />
                         }
-                    </div>
-                }
-            }
-        </div>
+                    }
+                    else
+                    {
+                        <input type="text"
+                               value="@item.Content"
+                               @oninput="e => { item.Content = e.Value?.ToString(); contentChanged = true; }"
+                               placeholder="שם פריט..." />
+                    }
 
-        @* ── קטגוריות ── *@
-        <div>
-            <h4>קטגוריות</h4>
-
-            @if (categories.Count == 0)
-            {
-                <p>אין קטגוריות עדיין</p>
+                    <button @onclick="() => RemoveItem(item)" @onclick:stopPropagation="true">מחק</button>
+                </div>
             }
-            else
-            {
-                @foreach (var cat in categories)
+
+            @* כפתור הוספת פריט — ללא הגבלה *@
+            <button @onclick="AddItem">+ פריט</button>
+        }
+    </div>
+
+    @* ── קטגוריות ── *@
+    <div>
+        <h4>קטגוריות</h4>
+
+        @foreach (var cat in categories)
+        {
+            var catInputId = "cat_" + cat.ID;
+            <div @onclick="() => SelectCategory(cat)">
+                <label>
+                    <input type="radio"
+                           name="cat-type-@cat.ID"
+                           checked="@(!cat.IsImage)"
+                           @onchange="() => { cat.IsImage = false; contentChanged = true; }"
+                           @onclick:stopPropagation="true" />
+                    טקסט
+                </label>
+                <label>
+                    <input type="radio"
+                           name="cat-type-@cat.ID"
+                           checked="@cat.IsImage"
+                           @onchange="() => { cat.IsImage = true; contentChanged = true; }"
+                           @onclick:stopPropagation="true" />
+                    תמונה
+                </label>
+
+                @if (cat.IsImage)
                 {
-                    <div @onclick="() => selectedCategory = cat">
-                        <label>
-                            <input type="radio"
-                                   name="cat-type-@cat.ID"
-                                   checked="@(!cat.IsImage)"
-                                   @onchange="() => { cat.IsImage = false; contentChanged = true; }"
-                                   @onclick:stopPropagation="true" />
-                            טקסט
-                        </label>
-                        <label>
-                            <input type="radio"
-                                   name="cat-type-@cat.ID"
-                                   checked="@cat.IsImage"
-                                   @onchange="() => { cat.IsImage = true; contentChanged = true; }"
-                                   @onclick:stopPropagation="true" />
-                            תמונה
-                        </label>
-
-                        @if (cat.IsImage)
-                        {
-                            @if (!string.IsNullOrEmpty(cat.Content))
-                            {
-                                <img src="@cat.Content" alt="קטגוריה" style="width:80px; height:80px;" />
-                            }
-                            else
-                            {
-                                <span>אין תמונה</span>
-                            }
-                        }
-                        else
-                        {
-                            <input type="text"
-                                   value="@cat.Content"
-                                   @oninput="e => { cat.Content = e.Value?.ToString(); contentChanged = true; }"
-                                   @onclick:stopPropagation="true"
-                                   placeholder="שם קטגוריה..." />
-                        }
-                    </div>
+                    @if (!string.IsNullOrEmpty(cat.Content))
+                    {
+                        <img src="uploadedFiles/@cat.Content" alt="קטגוריה" style="width:80px; height:80px;" />
+                        <button type="button" @onclick="() => DeleteImage(cat, false)"
+                                @onclick:stopPropagation="true">מחק תמונה</button>
+                    }
+                    else
+                    {
+                        <button type="button" @onclick="() => TriggerFileInput(catInputId)"
+                                @onclick:stopPropagation="true">העלה תמונה</button>
+                        <InputFile id="@catInputId" OnChange="(e) => UploadFile(e, cat, false)" hidden />
+                    }
                 }
-            }
-        </div>
+                else
+                {
+                    <input type="text"
+                           value="@cat.Content"
+                           @oninput="e => { cat.Content = e.Value?.ToString(); contentChanged = true; }"
+                           @onclick:stopPropagation="true"
+                           placeholder="שם קטגוריה..." />
+                }
 
-        @* ── כפתור שמור שינויים ── *@
-        <br />
-        <button disabled="@(!contentChanged)" @onclick="SaveContent">שמירת שינויים</button>
-        <p>@contentMsg</p>
+                <button @onclick="() => RemoveCategory(cat)" @onclick:stopPropagation="true">מחק</button>
+            </div>
+        }
 
-    </AccordionSection>
+        @* כפתור + קטגוריה — מוצג רק אם יש פחות מ-5 *@
+        @if (categories.Count < 5)
+        {
+            <button @onclick="AddCategory">+ קטגוריה</button>
+        }
+    </div>
 
+    @* ── שגיאות ולידציה ── *@
+    @if (!string.IsNullOrEmpty(validationMsg))
+    {
+        <p>@validationMsg</p>
+    }
+
+    @* ── כפתור שמור שינויים ── *@
+    <br />
+    <button disabled="@(!contentChanged)" @onclick="SaveContent">שמירת שינויים</button>
+    <p>@contentMsg</p>
+
+</AccordionSection>
 
 @code {
 
@@ -202,12 +219,23 @@ else
     string msg = "";
     bool isSettingsOpen; // במידה וזה משחק חדש האקורדיון של ההגדרות יהיה כבר פתוח
 
-
     // ── עריכת תוכן ── //
     List<CategoryToSave> categories = new List<CategoryToSave>();
     CategoryToSave selectedCategory = null;
     bool contentChanged = false;
     string contentMsg = "";
+    string validationMsg = "";
+    
+    // ── העלאת תמונה ── //
+    long maxFileSize = 4194304;
+
+
+    // רשימות של IDs שנמחקו — ישלחו לשרת בעת שמירה
+    List<int> deletedCategoryIds = new List<int>();
+    List<int> deletedItemIds = new List<int>();
+
+    int minCategories = 3; // מינימום קטגוריות
+    int minItems = 6;      // מינימום פריטים לקטגוריה
 
     // ── טעינה ראשונית ── //
     protected override async Task OnParametersSetAsync()
@@ -223,7 +251,7 @@ else
         {
             isSettingsOpen = false;
             // טעינת הגדרות משחק
-            var gameRes = await Http.GetAsync($"api/Games/GetGame/{gameIdToEdit}");
+            var gameRes = await Http.GetAsync($"api/EditGame/GetGame/{gameIdToEdit}");
             if (gameRes.IsSuccessStatusCode)
             {
                 gameToEdit = await gameRes.Content.ReadFromJsonAsync<GameToAddDTO>();
@@ -231,10 +259,9 @@ else
                 if (gameToEdit.RoundTime == 0)
                     noLimit = true;
                 // אם הנתון של ללא הגבלה מסומן אז גם הצ׳ק בוקס צריך להופיע מסומן
-                
 
                 originalGame = new GameToAddDTO
-                    //  כדי לבדוק אם יש שינויים בתיבות הטקסט נעשה מופע של משחק מקורי, בעתיד נשתמש בו גם ל״ביטול שינויים״
+                    // כדי לבדוק אם יש שינויים בתיבות הטקסט נעשה מופע של משחק מקורי, בעתיד נשתמש בו גם ל״ביטול שינויים״
                 {
                     GameName = gameToEdit.GameName,
                     RoundTime = gameToEdit.RoundTime,
@@ -250,12 +277,134 @@ else
 
     async Task LoadGameContent()
     {
-        var res = await Http.GetAsync($"api/Games/getGameContent/{gameIdToEdit}");
+        var res = await Http.GetAsync($"api/EditGame/GetGameContent/{gameIdToEdit}");
         if (res.IsSuccessStatusCode)
         {
             var fullGame = await res.Content.ReadFromJsonAsync<FullGameToSave>();
             categories = fullGame?.Categories ?? new List<CategoryToSave>();
         }
+
+        // השלמה למינימום 3 קטגוריות עם פלייסהולדרים ריקים
+        while (categories.Count < minCategories)
+        {
+            categories.Add(new CategoryToSave { Items = new List<ItemToSave>() });
+        }
+
+        // השלמת פריטים למינימום 6 לכל קטגוריה שיש לה תוכן
+        foreach (var cat in categories)
+        {
+            EnsureMinItems(cat);
+        }
+    }
+
+    void EnsureMinItems(CategoryToSave cat)
+    // השלמת רשימת הפריטים של קטגוריה למינימום 6 — רק אם יש לה תוכן
+    {
+        if (cat.Items == null)
+            cat.Items = new List<ItemToSave>();
+
+        if (!string.IsNullOrEmpty(cat.Content))
+        {
+            while (cat.Items.Count < minItems)
+            {
+                cat.Items.Add(new ItemToSave { CategoryID = cat.ID });
+            }
+        }
+    }
+
+    void SelectCategory(CategoryToSave cat)
+    // בחירת קטגוריה — גם משלימה את הפריטים שלה למינימום
+    {
+        selectedCategory = cat;
+        EnsureMinItems(cat);
+    }
+
+    // ── הוספת קטגוריה / פריט ── //
+
+    void AddCategory()
+    // הוספת קטגוריה ריקה חדשה (עד מקסימום 5)
+    {
+        if (categories.Count < 5)
+        {
+            categories.Add(new CategoryToSave { Items = new List<ItemToSave>() });
+            contentChanged = true;
+        }
+    }
+
+    void AddItem()
+    // הוספת פריט ריק לקטגוריה הנבחרת
+    {
+        if (selectedCategory != null)
+        {
+            selectedCategory.Items.Add(new ItemToSave { CategoryID = selectedCategory.ID });
+            contentChanged = true;
+        }
+    }
+
+    // ── מחיקת קטגוריה / פריט ── //
+
+    void RemoveCategory(CategoryToSave cat)
+    // מחיקת קטגוריה — אם הייתה שמורה בבסיס הנתונים נוסיף ל-DeletedCategoryIds
+    {
+        if (cat.ID > 0)
+            deletedCategoryIds.Add(cat.ID);
+
+        categories.Remove(cat);
+
+        // אם הקטגוריה הנבחרת נמחקה — נאפס את הבחירה
+        if (selectedCategory == cat)
+            selectedCategory = null;
+
+        // שמירה על מינימום 3 קטגוריות ויזואלית
+        while (categories.Count < minCategories)
+        {
+            categories.Add(new CategoryToSave { Items = new List<ItemToSave>() });
+        }
+
+        contentChanged = true;
+    }
+
+    void RemoveItem(ItemToSave item)
+    // מחיקת פריט — אם היה שמור בבסיס הנתונים נוסיף ל-DeletedItemIds
+    {
+        if (item.ID > 0)
+            deletedItemIds.Add(item.ID);
+
+        selectedCategory.Items.Remove(item);
+
+        // שמירה על מינימום 6 פריטים ויזואלית אם לקטגוריה יש תוכן
+        EnsureMinItems(selectedCategory);
+
+        contentChanged = true;
+    }
+
+    // ── ולידציה לפני שמירה ── //
+
+    bool ValidateContent()
+    {
+        foreach (var cat in categories)
+        {
+            if (cat.ID > 0 && string.IsNullOrEmpty(cat.Content) && !cat.IsImage)
+            {
+                validationMsg = "לא ניתן לשמור קטגוריה ריקה — מחק אותה או הוסף תוכן";
+                return false;
+            }
+
+            if (cat.Items != null)
+            {
+                foreach (var item in cat.Items)
+                {
+                    if (item.ID > 0 && string.IsNullOrEmpty(item.Content) && !item.IsImage)
+                    {
+                        validationMsg = "לא ניתן לשמור פריט ריק — מחק אותו או הוסף תוכן";
+                        return false;
+                    }
+                }
+            }
+        }
+
+        validationMsg = "";
+        return true;
     }
 
     // ── הגדרות משחק: שמירה ── //
@@ -288,6 +437,9 @@ else
     async Task SaveGameSettings()
     // בלחיצה על ״שמירה״
     {
+        gameToEdit.GameName = gameToEdit.GameName.Trim();
+        // הפונקציה Trim מוחקת רווחים מיותרים בהתחלה ובסוף לפני השליחה לשרת
+
         if (gameToEdit.ID == 0)
             // אם זה משחק חדש תקרא לפונקציה בשרת שיוצרת משחק חדש
         {
@@ -299,12 +451,13 @@ else
                 displayName = gameToEdit.GameName;
                 msg = "המשחק נוצר בהצלחה";
                 canSave = false;
+                await LoadGameContent(); // עכשיו יש ID אז אפשר לטעון פלייסהולדרים
             }
         }
         else
             // אם זה משחק קיים תעדכן את הפרטים בהתאם
         {
-            var editRes = await Http.PostAsJsonAsync("api/Games/UpdateGame", gameToEdit);
+            var editRes = await Http.PostAsJsonAsync("api/EditGame/UpdateGame", gameToEdit);
             if (editRes.IsSuccessStatusCode)
             {
                 displayName = gameToEdit.GameName; // עדכון הכותרת רק אחרי שמירה
@@ -325,7 +478,7 @@ else
     {
         gameToEdit = new GameToAddDTO
         {
-            ID = gameToEdit.ID, 
+            ID = gameToEdit.ID,
             GameName = originalGame.GameName,
             RoundTime = originalGame.RoundTime,
             Instructions = originalGame.Instructions
@@ -337,20 +490,71 @@ else
         canSave = false;
         msg = "";
     }
-    
+
     // ── שמירת תוכן ── //
     async Task SaveContent()
     {
-        var fullGame = new FullGameToSave { Categories = categories };
-        var res = await Http.PostAsJsonAsync("api/Games/SaveContent", fullGame);
+        // ולידציה לפני שליחה לשרת
+        if (!ValidateContent())
+            return;
+
+        var fullGame = new FullGameToSave
+        {
+            Categories = categories,
+            DeletedCategoryIds = deletedCategoryIds,
+            DeletedItemIds = deletedItemIds
+        };
+
+        var res = await Http.PostAsJsonAsync($"api/EditGame/SaveContent/{gameToEdit.ID}", fullGame);
         if (res.IsSuccessStatusCode)
         {
             contentMsg = "השינויים נשמרו בהצלחה";
             contentChanged = false;
+            // איפוס רשימות המחיקה לאחר שמירה מוצלחת
+            deletedCategoryIds = new List<int>();
+            deletedItemIds = new List<int>();
+            // טעינה מחדש מהשרת כדי לקבל IDים מעודכנים
+            await LoadGameContent();
         }
         else
         {
             contentMsg = "שגיאה בשמירה";
+        }
+    }
+    async Task TriggerFileInput(string inputId)
+    {
+        await JS.InvokeVoidAsync("triggerFileClick", inputId);
+    }
+
+    async Task UploadFile(InputFileChangeEventArgs e, dynamic target, bool isItem)
+    {
+        var file = e.GetMultipleFiles().FirstOrDefault();
+        if (file == null || file.Size > maxFileSize) return;
+
+        var buffer = new byte[file.Size];
+        await file.OpenReadStream(maxFileSize).ReadAsync(buffer);
+        var imageBase64 = Convert.ToBase64String(buffer);
+
+        var saveRes = await Http.PostAsJsonAsync("api/Media/upload", imageBase64);
+        if (saveRes.IsSuccessStatusCode)
+        {
+            string newFileName = (await saveRes.Content.ReadAsStringAsync()).Trim('"');
+            target.Content = newFileName;
+            contentChanged = true;
+        }
+    }
+
+    async Task DeleteImage(dynamic target, bool isItem)
+    {
+        if (string.IsNullOrEmpty(target.Content)) return;
+
+        var imagesToDelete = new List<string> { target.Content };
+        var deleteRes = await Http.PostAsJsonAsync("api/Media/deleteImages", imagesToDelete);
+
+        if (deleteRes.IsSuccessStatusCode)
+        {
+            target.Content = "";
+            contentChanged = true;
         }
     }
 }

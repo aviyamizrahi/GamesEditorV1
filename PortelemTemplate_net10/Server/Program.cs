@@ -5,6 +5,8 @@ using UsersManager.Server;
 using System.Text;
 using Data;
 using Microsoft.AspNetCore.StaticFiles;
+using AuthTemplate.Server.Helpers;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,7 +29,7 @@ builder.Services.AddSingleton<TokenService>();
 builder.Services.AddSingleton<PasswordService>();
 
 //Files
-builder.Services.AddScoped<FilesManage>();
+builder.Services.AddScoped<AuthTemplate.Server.Helpers.FilesManage>();
 
 //JWT
 var jwtSettings = builder.Configuration.GetSection("JWTSettings");
@@ -52,7 +54,6 @@ builder.Services.AddAuthentication(options =>
     });
 
 builder.Services.AddHostedService<TokenCleanupBackgroundService>();
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
