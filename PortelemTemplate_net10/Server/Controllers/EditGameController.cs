@@ -154,11 +154,8 @@ namespace AuthTemplate.Server.Controllers
         // שמירת כל השינויים בתוכן המשחק בלחיצה אחת
         public async Task<IActionResult> SaveContent(int authUserId, int gameId, FullGameToSave fullGame)
         {
-            Console.WriteLine($"=== SaveContent called: authUserId={authUserId}, gameId={gameId}");
-
             if (authUserId <= 0)
             {
-                Console.WriteLine("=== FAILED: authUserId <= 0");
                 return Unauthorized("user is not authenticated");
             }
 
@@ -166,10 +163,8 @@ namespace AuthTemplate.Server.Controllers
             object checkParam = new { UserId = authUserId, GameID = gameId };
             string checkQuery = "SELECT ID FROM Games WHERE ID = @GameID AND UserID = @UserId";
             var check = await _db.GetRecordsAsync<int>(checkQuery, checkParam);
-            Console.WriteLine($"=== check count: {check?.Count()}");
             if (!check.Any())
             {
-                Console.WriteLine("=== FAILED: Game not found or not yours");
                 return BadRequest("Game not found or not yours");
             }
 

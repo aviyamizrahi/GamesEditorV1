@@ -1,4 +1,5 @@
 @page "/EditGame/{gameIdToEdit:int}"
+@attribute [Authorize]
 @using AuthTemplate.Shared.Games
 @using AuthTemplate.Shared.EditGameContentDTOs
 @inject HttpClient Http
@@ -105,14 +106,14 @@ else
                         @if (!string.IsNullOrEmpty(item.Content))
                         {
                             <img src="uploadedFiles/@item.Content" alt="פריט" style="width:80px; height:80px;" />
-                            <button type="button" @onclick="() => DeleteImage(item, true)"
+                            <button type="button" @onclick="() => DeleteItemImage(item)"
                                     @onclick:stopPropagation="true">מחק תמונה</button>
                         }
                         else
                         {
                             <button type="button" @onclick="() => TriggerFileInput(itemInputId)"
                                     @onclick:stopPropagation="true">העלה תמונה</button>
-                            <InputFile id="@itemInputId" OnChange="(e) => UploadFile(e, item, true)" hidden />
+                            <InputFile id="@itemInputId" OnChange="(e) => UploadItemFile(e, item)" hidden />
                         }
                     }
                     else
@@ -162,14 +163,14 @@ else
                     @if (!string.IsNullOrEmpty(cat.Content))
                     {
                         <img src="uploadedFiles/@cat.Content" alt="קטגוריה" style="width:80px; height:80px;" />
-                        <button type="button" @onclick="() => DeleteImage(cat, false)"
+                        <button type="button" @onclick="() => DeleteCategoryImage(cat)"
                                 @onclick:stopPropagation="true">מחק תמונה</button>
                     }
                     else
                     {
                         <button type="button" @onclick="() => TriggerFileInput(catInputId)"
                                 @onclick:stopPropagation="true">העלה תמונה</button>
-                        <InputFile id="@catInputId" OnChange="(e) => UploadFile(e, cat, false)" hidden />
+                        <InputFile id="@catInputId" OnChange="(e) => UploadCategoryFile(e, cat)" hidden />
                     }
                 }
                 else
@@ -526,7 +527,7 @@ else
         await JS.InvokeVoidAsync("triggerFileClick", inputId);
     }
 
-    async Task UploadFile(InputFileChangeEventArgs e, dynamic target, bool isItem)
+    async Task UploadItemFile(InputFileChangeEventArgs e, ItemToSave item)
     {
         var file = e.GetMultipleFiles().FirstOrDefault();
         if (file == null || file.Size > maxFileSize) return;
@@ -538,22 +539,54 @@ else
         var saveRes = await Http.PostAsJsonAsync("api/Media/upload", imageBase64);
         if (saveRes.IsSuccessStatusCode)
         {
-            string newFileName = (await saveRes.Content.ReadAsStringAsync()).Trim('"');
-            target.Content = newFileName;
+            string newFileName = await saveRes.Content.ReadFromJsonAsync<string>();
+            item.Content = newFileName;
             contentChanged = true;
         }
     }
 
-    async Task DeleteImage(dynamic target, bool isItem)
+    async Task UploadCategoryFile(InputFileChangeEventArgs e, CategoryToSave cat)
     {
-        if (string.IsNullOrEmpty(target.Content)) return;
+        var file = e.GetMultipleFiles().FirstOrDefault();
+        if (file == null || file.Size > maxFileSize) return;
 
-        var imagesToDelete = new List<string> { target.Content };
+        var buffer = new byte[file.Size];
+        await file.OpenReadStream(maxFileSize).ReadAsync(buffer);
+        var imageBase64 = Convert.ToBase64String(buffer);
+
+        var saveRes = await Http.PostAsJsonAsync("api/Media/upload", imageBase64);
+        if (saveRes.IsSuccessStatusCode)
+        {
+            string newFileName = await saveRes.Content.ReadFromJsonAsync<string>();
+            cat.Content = newFileName;
+            contentChanged = true;
+        }
+    }
+
+    async Task DeleteItemImage(ItemToSave item)
+    {
+        if (string.IsNullOrEmpty(item.Content)) return;
+
+        var imagesToDelete = new List<string> { item.Content };
         var deleteRes = await Http.PostAsJsonAsync("api/Media/deleteImages", imagesToDelete);
 
         if (deleteRes.IsSuccessStatusCode)
         {
-            target.Content = "";
+            item.Content = "";
+            contentChanged = true;
+        }
+    }
+
+    async Task DeleteCategoryImage(CategoryToSave cat)
+    {
+        if (string.IsNullOrEmpty(cat.Content)) return;
+
+        var imagesToDelete = new List<string> { cat.Content };
+        var deleteRes = await Http.PostAsJsonAsync("api/Media/deleteImages", imagesToDelete);
+
+        if (deleteRes.IsSuccessStatusCode)
+        {
+            cat.Content = "";
             contentChanged = true;
         }
     }
