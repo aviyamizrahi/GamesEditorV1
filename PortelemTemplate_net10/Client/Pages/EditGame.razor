@@ -76,13 +76,13 @@ else
     <div>
         <h4>פריטים</h4>
 
-        @if (selectedCategory == null)
+        @if (selectedCategory == null) // אם לא נבחרה קטגוריה
         {
             <p>יש לבחור קטגוריה</p>
         }
         else
         {
-            @foreach (var item in selectedCategory.Items)
+            @foreach (var item in selectedCategory.Items) // תעבור על כל הפריטים של אותה קטגוריה
             {
                 var itemInputId = "item_" + item.ID;
                 <div class="item-container" style="border: 1px black; padding: 5px">
@@ -103,7 +103,7 @@ else
 
                     @if (item.IsImage)
                     {
-                        @if (!string.IsNullOrEmpty(item.Content))
+                        @if (!string.IsNullOrEmpty(item.Content)) // אם יש תוכן - שם יהיה כתוב את שם התמונה
                         {
                             <img src="uploadedFiles/@item.Content" alt="פריט" style="width:80px; height:80px;" />
                             <button type="button" @onclick="() => DeleteItemImage(item)"
