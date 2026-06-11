@@ -1,0 +1,22 @@
+default-input[b-flnmqkrp22] {
+    border: none;
+    padding: 5px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    outline: 5px solid lightgray;
+    outline-offset: -1px;
+    transition: all ease-in-out .2s;
+}
+
+.default-input.good-input:focus[b-flnmqkrp22] {
+    outline: 5px solid green !important;
+}
+
+.default-input.warnning-input:focus[b-flnmqkrp22] {
+    outline: 5px solid orange !important;
+}
+
+.default-input.danger-input:focus[b-flnmqkrp22] {
+    outline: 5px solid red !important;
+}

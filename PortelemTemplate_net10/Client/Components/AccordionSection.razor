@@ -1,0 +1,48 @@
+<div class="accordion-section">
+    <div class="accordion-header" @onclick="Toggle" title="@(Disabled ? "קודם יש לשמור משחק חדש" : "")">
+        <span>@(isOpenInternal ? "−" : "+")</span>
+        @* אם אקורדיון פתוח מציג מיניוס ואם אקורדיון סגור מציג פלוס *@
+        @* חקירה עצמית: סימן שאלה אומר ״if true״ ונקודותיים אומר ״else״ *@
+        <span>@Title</span>
+    </div>
+
+    @if (isOpenInternal)
+    {
+        <div class="accordion-body">
+            @ChildContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+    // תוכן שמשתנה בכל אקורדיון בדף של עריכה משחק
+    [Parameter] public bool IsOpen { get; set; } = false;
+    [Parameter] public bool Disabled { get; set; } = false; 
+    // בזמן יצירת משחק חדש לא יהיה ניתן לפתוח את ״ערית התוכן״ לכן נרצה להפוך אותו לדיסאייבל
+
+
+    bool isOpenInternal; // מנהל את המצב של האקורדיון - פתוח / סגור
+    bool initialized = false; // האם כבר היה אתחול
+    string sign;
+
+    protected override void OnParametersSet()
+        // רץ בכל פעם שפרמטר מתעדכן מבחוץ
+    {
+        if (!initialized)
+            // אתחול פעם אחת בלבד — כדי שהמשתמש יוכל לפתוח/לסגור בלי שהערך יידרס
+        {
+            isOpenInternal = IsOpen;
+            initialized = true;
+        }
+    }
+
+    void Toggle()
+    // הפעולה ההפוכה בלחיצה
+    {
+        if (!Disabled)
+            // רק אם ניתן ללחוץ על האקורדיון
+            isOpenInternal = !isOpenInternal;
+    }
+}

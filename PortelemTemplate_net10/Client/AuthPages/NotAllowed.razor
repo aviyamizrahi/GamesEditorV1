@@ -1,0 +1,32 @@
+﻿@inject NavigationManager nav
+@inject IConfiguration _config
+
+<PageTitle>התחברות</PageTitle>
+@if (!auth)
+{
+    <h2>שגיאת התחברות</h2>
+    <p>ההתחברות למערכת לא הצליחה.</p>
+    <p>אם השגיאה חוזרת ניתן לפנות לצוות התמיכה של הפורטל"מ.</p>
+    <a href="@_config["portelem:mainurl"]">מעבר לפורטל"מ</a>
+}
+
+@code {
+    [Inject]
+    public IAuthenticationService _AuthService { get; set; }
+    
+    //משתמש ניסה להגיע למקום שאין לו הרשאות
+    bool auth = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        bool isAuth = await _AuthService.LoginWithPortelem();
+        await Task.Delay(1000);
+        auth = isAuth;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+    }
+
+}

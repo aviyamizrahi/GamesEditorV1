@@ -1,0 +1,10 @@
+.navbar-dark[b-juk25fujaf]{
+    background-color: gray;
+
+}[b-juk25fujaf] a.nav-link, button[b-juk25fujaf]{
+     color: white;
+ }
+[b-juk25fujaf] a.nav-link:hover, button:hover[b-juk25fujaf]{
+    text-decoration: underline;
+    color: white;
+}
