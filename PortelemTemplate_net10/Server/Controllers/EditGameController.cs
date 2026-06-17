@@ -129,7 +129,7 @@ namespace AuthTemplate.Server.Controllers
             object checkParam = new { UserId = authUserId, GameID = id };
             string checkQuery = "SELECT ID FROM Games WHERE ID = @GameID AND UserID = @UserId";
             var check = await _db.GetRecordsAsync<int>(checkQuery, checkParam);
-            if (!check.Any())
+            if (check.FirstOrDefault() == 0)
                 // אם המשחק לא שייך למשתמש תחזיר שגיאה
                 return BadRequest("Game not found or not yours");
 
@@ -139,12 +139,12 @@ namespace AuthTemplate.Server.Controllers
             var records = await _db.GetRecordsAsync<CategoryToSave>(catQuery, param);
             List<CategoryToSave> categories = records.ToList();
 
-            foreach (var cat in categories)
+            foreach (var cat in categories) // תעבור על רשימת הקטגוריות
             {
                 object itemParam = new { CategoryID = cat.ID };
                 string itemQuery = "SELECT ID, CategoryID, Content, IsImage FROM Items WHERE CategoryID = @CategoryID";
                 var items = await _db.GetRecordsAsync<ItemToSave>(itemQuery, itemParam);
-                cat.Items = items.ToList();
+                cat.Items = items.ToList(); // תהפוך את הפריטים שמצאת לרשימה
             }
 
            // 
@@ -167,7 +167,7 @@ namespace AuthTemplate.Server.Controllers
             object checkParam = new { UserId = authUserId, GameID = gameId };
             string checkQuery = "SELECT ID FROM Games WHERE ID = @GameID AND UserID = @UserId";
             var check = await _db.GetRecordsAsync<int>(checkQuery, checkParam);
-            if (!check.Any())
+            if (check.FirstOrDefault() == 0)
             {
                 return BadRequest("Game not found or not yours");
             }
@@ -230,9 +230,8 @@ namespace AuthTemplate.Server.Controllers
             return Ok();
         }
 
-        // ─────────────────────────────────────────
-        //        פונקציות עזר פרטיות — קטגוריות
-        // ─────────────────────────────────────────
+        // ───────── פונקציות עזר — קטגוריות ───────────────
+        
 
         private async Task<int> AddCategory(CategoryToSave cat, int gameId)
         // הוספת קטגוריה חדשה לבסיס הנתונים, מחזירה את ה-ID החדש
@@ -259,9 +258,7 @@ namespace AuthTemplate.Server.Controllers
             await _db.SaveDataAsync(query, param);
         }
 
-        // ─────────────────────────────────────────
-        //        פונקציות עזר פרטיות — פריטים
-        // ─────────────────────────────────────────
+        // ──────────  פונקציות עזר — פריטים ─────────────────
 
         private async Task AddItem(ItemToSave item)
         // הוספת פריט חדש לבסיס הנתונים
@@ -288,9 +285,8 @@ namespace AuthTemplate.Server.Controllers
         }
         
         
-        // ─────────────────────────────────────────
-        // עדכון שם תמונה
-        // ─────────────────────────────────────────
+        // ──────────── עדכון שם תמונה ─────────────────
+      
  
         [HttpPost("UpdateCategoryImage/{catId}")] 
         // אחראית על עדכון השם של התמונה בבסיס הנתונים של הקטגוריה 

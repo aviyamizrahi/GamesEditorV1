@@ -90,6 +90,7 @@ else
                         <input type="radio"
                                name="item-type-@item.ID-@selectedCategory.ID"
                                checked="@(!item.IsImage)"
+                               disabled="@(!string.IsNullOrEmpty(item.Content) && item.IsImage)"
                                @onchange="() => { item.IsImage = false; contentChanged = true; }" />
                         טקסט
                     </label>
@@ -97,6 +98,7 @@ else
                         <input type="radio"
                                name="item-type-@item.ID-@selectedCategory.ID"
                                checked="@item.IsImage"
+                               disabled="@(!string.IsNullOrEmpty(item.Content) && !item.IsImage)"
                                @onchange="() => { item.IsImage = true; contentChanged = true; }" />
                         תמונה
                     </label>
@@ -137,22 +139,27 @@ else
     <div>
         <h4>קטגוריות</h4>
 
-        @foreach (var cat in categories)
+        @for (int i = 0; i < categories.Count; i++)
+            // שימוש בלולאת for כדי להבדיל את כפתורי הרדיו של כל אחת מהקטגוריות הריקות שאין להן עדיין id
         {
-            string catInputId = "cat_" + cat.ID.ToString();
+            CategoryToSave cat = categories[i]; // שימוש יותר נוח בקטגוריה הנוכחית בלולאה
+            string catInputId = "cat_" + i.ToString();  // שימוש באינדקס במקום ID כדי למנוע התנגשות בין קטגוריות ריקות
+
             <div @onclick="() => SelectCategory(cat)">
                 <label>
                     <input type="radio"
-                           name="cat-type-@cat.ID"
+                           name="cat-type-@i"
                            checked="@(!cat.IsImage)"
+                           disabled="@(!string.IsNullOrEmpty(cat.Content) && cat.IsImage)"
                            @onchange="() => { cat.IsImage = false; contentChanged = true; }"
                            @onclick:stopPropagation="true" />
                     טקסט
                 </label>
                 <label>
                     <input type="radio"
-                           name="cat-type-@cat.ID"
+                           name="cat-type-@i"
                            checked="@cat.IsImage"
+                           disabled="@(!string.IsNullOrEmpty(cat.Content) && !cat.IsImage)"
                            @onchange="() => { cat.IsImage = true; contentChanged = true; }"
                            @onclick:stopPropagation="true" />
                     תמונה
@@ -160,20 +167,20 @@ else
 
                 @if (cat.IsImage)
                 {
-                    @if (!string.IsNullOrEmpty(cat.Content))
+                    @if (!string.IsNullOrEmpty(cat.Content)) // אם יש תמונה — הצג אותה עם אפשרות מחיקה
                     {
                         <img src="uploadedFiles/@cat.Content" alt="קטגוריה" style="width:80px; height:80px;" />
                         <button type="button" @onclick="() => DeleteCategoryImage(cat)"
                                 @onclick:stopPropagation="true">מחק תמונה</button>
                     }
-                    else
+                    else // אין תמונה עדיין — הצג כפתור העלאה
                     {
                         <button type="button" @onclick="() => TriggerFileInput(catInputId)"
                                 @onclick:stopPropagation="true">העלה תמונה</button>
                         <InputFile id="@catInputId" OnChange="(e) => UploadCategoryFile(e, cat)" accept="image/*" hidden />
                     }
                 }
-                else
+                else // טקסט — הצג תיבת קלט
                 {
                     <input type="text"
                            value="@cat.Content"
@@ -182,6 +189,7 @@ else
                            placeholder="שם קטגוריה..." />
                 }
 
+                @* מחיקת קטגוריה — stopPropagation מונע בחירת הקטגוריה בעת לחיצה על מחק *@
                 <button @onclick="() => RemoveCategory(cat)" @onclick:stopPropagation="true">מחק</button>
             </div>
         }
@@ -238,6 +246,7 @@ else
     int minCategories = 3; // מינימום קטגוריות
     int minItems = 6;      // מינימום פריטים לקטגוריה
 
+    
     // ── טעינה ראשונית ── //
     protected override async Task OnParametersSetAsync()
         // כאשר הוגדר פרמטר וקיבלנו מספר דרך הנתיב
@@ -282,13 +291,17 @@ else
         if (res.IsSuccessStatusCode)
         {
             var fullGame = await res.Content.ReadFromJsonAsync<FullGameToSave>();
-            categories = fullGame?.Categories ?? new List<CategoryToSave>();
+            if (fullGame != null)
+                categories = fullGame.Categories; // כל המידע נמצא פה ברשימת הקטגוריות - כל קטגוריה מכילה רשימת פריטים
+            else
+                categories = new List<CategoryToSave>(); // אם אין תוכן כלל אז תיצור רשימה ריקה - ישמש לבדיקה לפלייסהולדרים
         }
 
         // השלמה למינימום 3 קטגוריות עם פלייסהולדרים ריקים
         while (categories.Count < minCategories)
         {
             categories.Add(new CategoryToSave { Items = new List<ItemToSave>() });
+            // כל עוד יש לנו פחות מ3 קטגוריות תשלים מידע ריק כדי להראות פלייסהולדרים
         }
 
         // השלמת פריטים למינימום 6 לכל קטגוריה שיש לה תוכן
@@ -304,11 +317,11 @@ else
         if (cat.Items == null)
             cat.Items = new List<ItemToSave>();
 
-        if (!string.IsNullOrEmpty(cat.Content))
+        if (!string.IsNullOrEmpty(cat.Content)) // רק אם לקטגוריה יש תוכן (תמונה או טקסט)
         {
-            while (cat.Items.Count < minItems)
+            while (cat.Items.Count < minItems) // כל עוד רשימת הפריטים מונה פחות מכמות הפריטים המינימלית (6 פריטים)
             {
-                cat.Items.Add(new ItemToSave { CategoryID = cat.ID });
+                cat.Items.Add(new ItemToSave { CategoryID = cat.ID }); // תשלים מידע ריק בשביל הפלייסהולדרים
             }
         }
     }
@@ -323,7 +336,7 @@ else
     // ── הוספת קטגוריה / פריט ── //
 
     void AddCategory()
-    // הוספת קטגוריה ריקה חדשה (עד מקסימום 5)
+    // הוספת קטגוריה ריקה חדשה (עד מקסימום 5) בלחיצה על כפתור +
     {
         if (categories.Count < 5)
         {
@@ -551,7 +564,6 @@ else
             if (item.ID > 0)
                 await Http.PostAsJsonAsync($"api/EditGame/UpdateItemImage/{item.ID}", newFileName);
             contentChanged = true;
-            StateHasChanged();
         }
     }
 
@@ -578,7 +590,6 @@ else
             if (cat.ID > 0)
                 await Http.PostAsJsonAsync($"api/EditGame/UpdateCategoryImage/{cat.ID}", newFileName);
             contentChanged = true;
-            StateHasChanged();
         }
     }
 
