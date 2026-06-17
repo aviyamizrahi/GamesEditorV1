@@ -78,7 +78,29 @@
     
     @if (openPopUp)
     {
-        <DeleteGame IsVisible="@openPopUp" GameName="@gameToDelete.GameName" OnConfirm="DeleteGame" OnCancel="ClosePopup" />
+        <PopUp IsVisible="@openPopUp"
+               Title="מחיקת משחק"
+               ConfirmText="מחיקת משחק"
+               CancelText="ביטול"
+               OnConfirm="DeleteGame"
+               OnCancel="ClosePopup">
+            @if (gameToDelete.CategoriesCount > 0)
+            {
+                <p>המשחק "@gameToDelete.GameName"</p>
+                <p>מכיל
+                @gameToDelete.CategoriesCount
+                קטגוריות
+                ו
+                @gameToDelete.ItemsCount
+                פריטים סה״כ,
+                </p>
+                <p>האם למחוק את המשחק בכל זאת?</p>
+            }
+            else
+            {
+                <p>האם ברצונך למחוק את המשחק "@gameToDelete.GameName"?</p>
+            }
+        </PopUp>
     }
 
    
@@ -95,7 +117,7 @@
     int userId = 0;
 
     List<GameToTableDTO> MyGamesList;
-    GameToTableDTO gameToDelete = new GameToTableDTO();
+    GameToDeleteDTO gameToDelete = new GameToDeleteDTO();
     string msg = "";
     bool hasGames;
     int gameIdToEdit = 0;
@@ -132,10 +154,27 @@
         }
     }
 
-    void OpenDeletePopup(GameToTableDTO game)
+    async Task OpenDeletePopup(GameToTableDTO game)
     {
-        Console.WriteLine("OpenDeletePopup called!"); // בדיקה בשבילנו 
-        gameToDelete = game;
+        if (game.CanPublish || game.IsPublish)
+            // רק אם המשחק עומד בתנאים — שולפים את המידע המפורט מהשרת
+        {
+            var res = await Http.GetAsync($"api/Games/GetGameToDelete/{game.ID}");
+            if (res.IsSuccessStatusCode)
+            {
+                gameToDelete = await res.Content.ReadFromJsonAsync<GameToDeleteDTO>();
+            }
+        }
+        else
+            // אחרת — ממלאים רק את המידע הבסיסי שכבר יש לנו
+        {
+            gameToDelete = new GameToDeleteDTO
+            {
+                ID = game.ID,
+                GameName = game.GameName
+            };
+        }
+    
         openPopUp = true;
     }
 
@@ -146,13 +185,24 @@
 
     async Task DeleteGame()
     {
-        var deleteRes = await Http.DeleteAsync($"api/EditGame/DeleteGame/{gameToDelete.ID}");
+        var deleteRes = await Http.DeleteAsync($"api/Games/DeleteGame/{gameToDelete.ID}");
         if (deleteRes.IsSuccessStatusCode)
         {
-            MyGamesList.Remove(gameToDelete);
+            GameToTableDTO gameInList = null;
+            foreach (GameToTableDTO game in MyGamesList)
+                // עוברים על הרשימה כדי למצוא את המשחק שנמחק
+            {
+                if (game.ID == gameToDelete.ID)
+                {
+                    gameInList = game;
+                    break;
+                }
+            }
+            if (gameInList != null)
+                MyGamesList.Remove(gameInList); // כדי להוריד את המשחק ויזואלית בעמוד
         }
 
-        gameToDelete = new GameToTableDTO();
+        gameToDelete = new GameToDeleteDTO();
         openPopUp = false;
     }
     

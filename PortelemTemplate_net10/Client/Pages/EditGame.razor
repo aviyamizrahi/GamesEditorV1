@@ -1,13 +1,35 @@
 @page "/EditGame/{gameIdToEdit:int}"
 @attribute [Authorize]
+@using AuthTemplate.Shared.CheckDTOs
 @using AuthTemplate.Shared.Games
 @using AuthTemplate.Shared.EditGameContentDTOs
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 
+<style>
+    .selected-category {
+        border: 2px solid blue;
+        background-color: #f0f4ff;
+    }
+</style>
 
-<button @onclick='() => Nav.NavigateTo("/GamesList")'>חזרה למשחקים שלי</button>
+<button @onclick='() => Nav.NavigateTo("/GamesList")' disabled="@(gameIdToEdit == 0 && gameToEdit.ID == 0)" >חזרה למשחקים שלי</button>
+@* הכפתור יהיה פעיל רק במידה ומשחק חדש נשמר ויש לו מספר id בבסיס הנתונים *@
+
+@if (gameStatus.IsPublish)
+{
+    <button @onclick="UnpublishGame">ביטול פרסום</button>
+}
+else
+{
+    <button disabled="@(!gameStatus.CanPublish || contentChanged || canSave)"
+            title="@(!gameStatus.CanPublish ? "המשחק לא עומד בתנאי הפרסום" : "")"
+            @onclick="() => showPublishPopup = true">
+        פרסום משחק
+    </button>
+}
+
 
 @if (String.IsNullOrEmpty(displayName))
 {
@@ -20,7 +42,7 @@ else
 
 @* ──────────────── הגדרות משחק ───────────────── *@
 
-<AccordionSection Title="עריכת הגדרות משחק" IsOpen="@isSettingsOpen">
+<AccordionSection Title="עריכת הגדרות משחק" IsOpen="@isSettingsOpen" UnsavedChanges="@canSave">
     <EditForm Model="gameToEdit" OnValidSubmit="SaveGameSettings">
         <DataAnnotationsValidator />
         <div>
@@ -70,7 +92,7 @@ else
 
 @* ───────────── עריכת התוכן ───────────────── *@
 
-<AccordionSection Title="עריכת תוכן" Disabled="@(gameToEdit.ID == 0)">
+<AccordionSection Title="עריכת תוכן" Disabled="@(gameToEdit.ID == 0)" UnsavedChanges="@contentChanged">
 
     @* ── פריטים ── *@
     <div>
@@ -78,17 +100,20 @@ else
 
         @if (selectedCategory == null)
         {
-            <p>יש לבחור קטגוריה</p>
+            <p>להוספת פריטים יש לבחור קטגוריה</p>
         }
         else
         {
-            @foreach (var item in selectedCategory.Items)
+            @for (int i = 0; i < selectedCategory.Items.Count; i++)
             {
-                string itemInputId = "item_" + item.ID.ToString();
-                <div class="item-container" style="border: 1px black; padding: 5px">
+                ItemToSave item = selectedCategory.Items[i]; // הפריט הנוכחי 
+                string itemInputId = "item_" + i.ToString();  // שימוש באינדקס במקום ID כדי למנוע התנגשות בין פריטים ריקים
+                
+                
+                <div class="item-container" style="border: 1px solid black; padding: 5px">
                     <label>
                         <input type="radio"
-                               name="item-type-@item.ID-@selectedCategory.ID"
+                               name="item-type-@i"
                                checked="@(!item.IsImage)"
                                disabled="@(!string.IsNullOrEmpty(item.Content) && item.IsImage)"
                                @onchange="() => { item.IsImage = false; contentChanged = true; }" />
@@ -96,7 +121,7 @@ else
                     </label>
                     <label>
                         <input type="radio"
-                               name="item-type-@item.ID-@selectedCategory.ID"
+                               name="item-type-@i"
                                checked="@item.IsImage"
                                disabled="@(!string.IsNullOrEmpty(item.Content) && !item.IsImage)"
                                @onchange="() => { item.IsImage = true; contentChanged = true; }" />
@@ -120,18 +145,21 @@ else
                     }
                     else
                     {
-                        <input type="text"
-                               value="@item.Content"
-                               @oninput="e => { item.Content = e.Value?.ToString(); contentChanged = true; }"
-                               placeholder="שם פריט..." />
+                        <CustomInputSimple Value="@item.Content"
+                                           ValueChanged="v => { item.Content = v; contentChanged = true; }"
+                                           Placeholder="שם פריט..."
+                                           MaxLength="16" />
                     }
 
                     <button @onclick="() => RemoveItem(item)" @onclick:stopPropagation="true">מחק</button>
                 </div>
             }
-
-            @* כפתור הוספת פריט — ללא הגבלה *@
-            <button @onclick="AddItem">+ פריט</button>
+            @if (!string.IsNullOrEmpty(selectedCategory.Content))
+                // כפתור הוספת פריט - קיים ופעיל רק במידה ויש תוכן בקטגוריה, ניתן להוסיף פריטים ללא הגבלה
+            {
+                <button @onclick="AddItem">+ פריט</button>
+            }
+            
         }
     </div>
 
@@ -145,14 +173,16 @@ else
             CategoryToSave cat = categories[i]; // שימוש יותר נוח בקטגוריה הנוכחית בלולאה
             string catInputId = "cat_" + i.ToString();  // שימוש באינדקס במקום ID כדי למנוע התנגשות בין קטגוריות ריקות
 
-            <div @onclick="() => SelectCategory(cat)">
+            <div @onclick="() => SelectCategory(cat)" class="@(selectedCategory == cat ? "selected-category" : "")" style="border: 1px solid black; padding: 5px">
+                @* אם הקטגוריה הנוכחית היא זו שנבחרה — מוסיפים מחלקת עיצוב מודגשת, אחרת ללא מחלקה *@
+
                 <label>
                     <input type="radio"
                            name="cat-type-@i"
                            checked="@(!cat.IsImage)"
                            disabled="@(!string.IsNullOrEmpty(cat.Content) && cat.IsImage)"
                            @onchange="() => { cat.IsImage = false; contentChanged = true; }"
-                           @onclick:stopPropagation="true" />
+                           @onclick:stopPropagation="true"/>
                     טקסט
                 </label>
                 <label>
@@ -161,7 +191,7 @@ else
                            checked="@cat.IsImage"
                            disabled="@(!string.IsNullOrEmpty(cat.Content) && !cat.IsImage)"
                            @onchange="() => { cat.IsImage = true; contentChanged = true; }"
-                           @onclick:stopPropagation="true" />
+                           @onclick:stopPropagation="true"/>
                     תמונה
                 </label>
 
@@ -169,7 +199,7 @@ else
                 {
                     @if (!string.IsNullOrEmpty(cat.Content)) // אם יש תמונה — הצג אותה עם אפשרות מחיקה
                     {
-                        <img src="uploadedFiles/@cat.Content" alt="קטגוריה" style="width:80px; height:80px;" />
+                        <img src="uploadedFiles/@cat.Content" alt="קטגוריה" style="width:80px; height:80px;"/>
                         <button type="button" @onclick="() => DeleteCategoryImage(cat)"
                                 @onclick:stopPropagation="true">מחק תמונה</button>
                     }
@@ -177,17 +207,20 @@ else
                     {
                         <button type="button" @onclick="() => TriggerFileInput(catInputId)"
                                 @onclick:stopPropagation="true">העלה תמונה</button>
-                        <InputFile id="@catInputId" OnChange="(e) => UploadCategoryFile(e, cat)" accept="image/*" hidden />
+                        <InputFile id="@catInputId" OnChange="(e) => UploadCategoryFile(e, cat)" accept="image/*" hidden/>
                     }
                 }
                 else // טקסט — הצג תיבת קלט
                 {
-                    <input type="text"
-                           value="@cat.Content"
-                           @oninput="e => { cat.Content = e.Value?.ToString(); contentChanged = true; }"
-                           @onclick:stopPropagation="true"
-                           placeholder="שם קטגוריה..." />
+                    <CustomInputSimple Value="@cat.Content"
+                                       ValueChanged="v => { cat.Content = v; contentChanged = true; }"
+                                       OnFocus="() => SelectCategory(cat)"
+                                       OnBlur="() => SelectCategory(cat)"
+                                       Placeholder="שם קטגוריה..."
+                                       MaxLength="16"/>
                 }
+                @* שולחת את הערך החדש לקומפוננטת אב כדי לעדכן את הטקסט החדש *@
+                @* בלחיצה על תיבת הטקסט הקטגוריה תיבחר *@
 
                 @* מחיקת קטגוריה — stopPropagation מונע בחירת הקטגוריה בעת לחיצה על מחק *@
                 <button @onclick="() => RemoveCategory(cat)" @onclick:stopPropagation="true">מחק</button>
@@ -214,10 +247,44 @@ else
 
 </AccordionSection>
 
+@* ── פופאפים ── *@
+
+<PopUp IsVisible="@showPublishPopup"
+       Title="פרסום משחק"
+       ConfirmText="פרסום משחק"
+       OnConfirm="ConfirmPublish"
+       OnCancel="() => showPublishPopup = false">
+    <p>האם ברצונך לפרסם את המשחק "@displayName" לפי עונות השנה?</p>
+    <p>קוד משחק: @gameStatus.GameCode</p>
+</PopUp>
+
+<PopUp IsVisible="@showDeleteCategoryPopup"
+       Title="מחיקת קטגוריה"
+       ConfirmText="מחיקה"
+       OnConfirm="() => DeleteCategory(categoryToDelete)"
+       OnCancel="() => showDeleteCategoryPopup = false">
+    @if (deleteBreaksPublish)
+    {
+        <p>לקטגוריה זו קיימים
+            @categoryToDeleteItemsCount
+            פריטים, המחיקה תגרום לאי עמידה בתנאי הפרסום, האם למחוק בכל זאת?
+        </p>
+    }
+    else
+    {
+        <p>לקטגוריה זו קיימים @categoryToDeleteItemsCount פריטים,</p>
+        <p>האם למחוק בכל זאת?</p>
+    }
+</PopUp>
+
 @code {
 
     // ── פרמטר ── //
     [Parameter] public int gameIdToEdit { get; set; }
+
+    // ── פרסום המשחק ── //
+    GameToTableDTO gameStatus = new GameToTableDTO();
+    bool wasEverPublished = false; // כדי להראות אנימציה - האם המשחק כבר פורסם
 
     // ── הגדרות משחק ── //
     GameToAddDTO gameToEdit = new GameToAddDTO();
@@ -227,6 +294,8 @@ else
     bool canSave = false;
     string msg = "";
     bool isSettingsOpen; // במידה וזה משחק חדש האקורדיון של ההגדרות יהיה כבר פתוח
+    bool showPublishPopup = false; // האם להראות פופ אפ פרסום
+
 
     // ── עריכת תוכן ── //
     List<CategoryToSave> categories = new List<CategoryToSave>();
@@ -234,7 +303,14 @@ else
     bool contentChanged = false;
     string contentMsg = "";
     string validationMsg = "";
-    
+
+    // ── מחיקת קטגוריה ── //
+    bool showDeleteCategoryPopup = false;
+    CategoryToSave categoryToDelete = null;
+    string categoryToDeleteItemsCount = ""; // בשביל הפופ-אפ
+    bool deleteBreaksPublish = false;
+
+
     // ── העלאת תמונה ── //
     long maxFileSize = 4194304;
 
@@ -243,50 +319,71 @@ else
     List<int> deletedCategoryIds = new List<int>();
     List<int> deletedItemIds = new List<int>();
 
-    int minCategories = 3; // מינימום קטגוריות
-    int minItems = 6;      // מינימום פריטים לקטגוריה
+    // ── תנאים למינימום פיריטים וקטגוריות ── //
 
-    
+    int minCategories = 3; // מינימום קטגוריות
+    int minItems = 6; // מינימום פריטים לקטגוריה
+
+
     // ── טעינה ראשונית ── //
     protected override async Task OnParametersSetAsync()
         // כאשר הוגדר פרמטר וקיבלנו מספר דרך הנתיב
     {
         if (gameIdToEdit == 0) // אם זה משחק חדש
         {
-            gameToEdit = new GameToAddDTO();
-            originalGame = new GameToAddDTO();
-            isSettingsOpen = true;
+            gameToEdit = new GameToAddDTO(); // איפוס משתנה
+            originalGame = new GameToAddDTO(); // איפוס המשתנה
+            isSettingsOpen = true; // אם זה משחק חדש האקורדיון צריך להיות פתוח בהגדרות המשחק
         }
         else if (gameIdToEdit > 0) // אם זה משחק קיים
         {
-            isSettingsOpen = false;
-            // טעינת הגדרות משחק
-            var gameRes = await Http.GetAsync($"api/EditGame/GetGame/{gameIdToEdit}");
-            if (gameRes.IsSuccessStatusCode)
-            {
-                gameToEdit = await gameRes.Content.ReadFromJsonAsync<GameToAddDTO>();
-
-                if (gameToEdit.RoundTime == 0)
-                    noLimit = true;
-                // אם הנתון של ללא הגבלה מסומן אז גם הצ׳ק בוקס צריך להופיע מסומן
-
-                originalGame = new GameToAddDTO
-                    // כדי לבדוק אם יש שינויים בתיבות הטקסט נעשה מופע של משחק מקורי, בעתיד נשתמש בו גם ל״ביטול שינויים״
-                {
-                    GameName = gameToEdit.GameName,
-                    RoundTime = gameToEdit.RoundTime,
-                    Instructions = gameToEdit.Instructions
-                };
-                displayName = gameToEdit.GameName; // כותרת הדף — לא תשתנה עד שמירה
-            }
-
-            // טעינת קטגוריות + פריטים
-            await LoadGameContent();
+            isSettingsOpen = false; // סגור במידה וזה משחק קיים - המשתמש יבחר מה לפתוח קודם
+            await LoadGameSettings(); // טעינת הגדרות
+            await LoadPublishStatus(); // טעינת סטטוס פרסום
+            await LoadGameContent(); // טעינת תוכן (קטגוריות ופריטים)
         }
     }
 
+    async Task LoadGameSettings()
+// טעינת הגדרות המשחק מהשרת
+    {
+        var gameRes = await Http.GetAsync($"api/EditGame/GetGame/{gameIdToEdit}");
+        if (gameRes.IsSuccessStatusCode)
+        {
+            gameToEdit = await gameRes.Content.ReadFromJsonAsync<GameToAddDTO>();
+
+            if (gameToEdit.RoundTime == 0)
+                noLimit = true;
+            // אם הנתון של ללא הגבלה מסומן אז גם הצ׳ק בוקס צריך להופיע מסומן
+
+            originalGame = new GameToAddDTO
+            {
+                GameName = gameToEdit.GameName,
+                RoundTime = gameToEdit.RoundTime,
+                Instructions = gameToEdit.Instructions
+            };
+            displayName = gameToEdit.GameName;
+        }
+    }
+
+
+    async Task LoadPublishStatus()
+    {
+        var publishRes = await Http.GetAsync($"api/EditGame/GetPublishStatus/{gameIdToEdit}");
+        if (publishRes.IsSuccessStatusCode)
+        {
+            gameStatus = await publishRes.Content.ReadFromJsonAsync<GameToTableDTO>();
+            if (gameStatus.IsPublish)
+                wasEverPublished = true; // בשביל האנימציה 
+        }
+    }
+
+
     async Task LoadGameContent()
     {
+        categories = new List<CategoryToSave>();
+        selectedCategory = null;
+        // מאפס את הרשימה ואת הקטגוריה הבחורה כל טעינה מחדש ומונע כפילויות
         var res = await Http.GetAsync($"api/EditGame/GetGameContent/{gameIdToEdit}");
         if (res.IsSuccessStatusCode)
         {
@@ -311,8 +408,47 @@ else
         }
     }
 
+    async Task ConfirmPublish()
+// אישור פרסום המשחק לאחר לחיצה על כפתור האישור בפופ אפ     
+    {
+        PublishGame publishData = new PublishGame { ID = gameToEdit.ID, IsPublish = true };
+        // יוצרים משתנה חדש עם מזהה המשחק ו-IsPublish=true כדי לפרסם
+
+        var res = await Http.PostAsJsonAsync("api/Games/publishGame", publishData);
+        if (res.IsSuccessStatusCode)
+        {
+            showPublishPopup = false;
+            // סגירת הפופ אפ
+            gameStatus.IsPublish = true;
+            // עדכון המשתנה בעמוד כדי שהכפתור יתחלף ויזואלית
+
+            if (!wasEverPublished)
+            {
+                wasEverPublished = true;
+                // סימון שהמשחק פורסם לראשונה — כדי שהאנימציה תופיע רק הפעם
+                // כאן בהמשך נוסיף את האנימציה
+            }
+        }
+    }
+
+    async Task UnpublishGame()
+// ביטול פרסום המשחק    
+    {
+        PublishGame publishData = new PublishGame { ID = gameToEdit.ID, IsPublish = false };
+        //  משתנה מסוג PublishGame עם מזהה המשחק ו-IsPublish=false כדי לבטל פרסום
+
+        var res = await Http.PostAsJsonAsync("api/Games/publishGame", publishData);
+        // שולחים את המשתנה החדש לשרת כדי לבטל פרסום
+
+        if (res.IsSuccessStatusCode)
+        {
+            gameStatus.IsPublish = false;
+            // אם השרת אישר — מעדכנים את המשתנה בעמוד כדי שנראה גם ויזואלית את השינוי
+        }
+    }
+
     void EnsureMinItems(CategoryToSave cat)
-    // השלמת רשימת הפריטים של קטגוריה למינימום 6 — רק אם יש לה תוכן
+        // השלמת רשימת הפריטים של קטגוריה למינימום 6 — רק אם יש לה תוכן
     {
         if (cat.Items == null)
             cat.Items = new List<ItemToSave>();
@@ -327,7 +463,7 @@ else
     }
 
     void SelectCategory(CategoryToSave cat)
-    // בחירת קטגוריה — גם משלימה את הפריטים שלה למינימום
+        // בחירת קטגוריה — גם משלימה את הפריטים שלה למינימום
     {
         selectedCategory = cat;
         EnsureMinItems(cat);
@@ -336,7 +472,7 @@ else
     // ── הוספת קטגוריה / פריט ── //
 
     void AddCategory()
-    // הוספת קטגוריה ריקה חדשה (עד מקסימום 5) בלחיצה על כפתור +
+        // הוספת קטגוריה ריקה חדשה (עד מקסימום 5) בלחיצה על כפתור +
     {
         if (categories.Count < 5)
         {
@@ -346,7 +482,7 @@ else
     }
 
     void AddItem()
-    // הוספת פריט ריק לקטגוריה הנבחרת
+        // הוספת פריט ריק לקטגוריה הנבחרת
     {
         if (selectedCategory != null)
         {
@@ -358,28 +494,82 @@ else
     // ── מחיקת קטגוריה / פריט ── //
 
     void RemoveCategory(CategoryToSave cat)
-    // מחיקת קטגוריה — אם הייתה שמורה בבסיס הנתונים נוסיף ל-DeletedCategoryIds
+    {
+        bool hasItems = false; // כדי לבדוק אם יש בקטגוריה פריטים או לא (משפיע על התצוגה בפופ אפ ועל התנהגות המחיקה)
+        int itemsCount = 0; // בשביל התצוגה בפופ אפ 
+
+        if (cat.Items != null) // לסכום את מספר הפריטים של הקטגוריה הנוכחית שנרצה למחוק
+        {
+            foreach (ItemToSave item in cat.Items)
+            {
+                if (!string.IsNullOrEmpty(item.Content))
+                {
+                    hasItems = true;
+                    itemsCount++;
+                }
+            }
+        }
+
+        // בדיקה כמה קטגוריות עומדות בתנאי הפרסום כרגע
+        int validCategoriesCount = 0;
+        foreach (CategoryToSave c in categories)
+        {
+            if (!string.IsNullOrEmpty(c.Content)) // אם יש תוכן לקטגוריה
+            {
+                int itemsWithContent = 0; // יסכום את הקטגוריות
+                foreach (ItemToSave item in c.Items) // מעבר על הפריטים של אותה קטגוריה
+                {
+                    if (!string.IsNullOrEmpty(item.Content)) // אם לפריט הזה יש תוכן
+                        itemsWithContent++; // תסכום גם אותו
+                }
+
+                if (itemsWithContent >= minItems) // אם הקטגוריה עומדת בתנאי הפרסום - מינימום פריטים לכל קטגוריה
+                    validCategoriesCount++; // תסכום לקטגוריות שעומדות בתנאי פרסום
+            }
+        }
+
+        deleteBreaksPublish = gameStatus.CanPublish && validCategoriesCount <= minCategories;
+        // אם המשחק עומד בתנאים כרגע ויש בדיוק מינימום קטגוריות תקינות — המחיקה תשבור את התנאים
+
+        if (hasItems || deleteBreaksPublish)
+            // פתיחת פופ אפ אם יש פריטים או שהמחיקה תשבור תנאי פרסום
+        {
+            categoryToDelete = cat;
+            categoryToDeleteItemsCount = itemsCount.ToString();
+            showDeleteCategoryPopup = true;
+        }
+        else
+        {
+            DeleteCategory(cat);
+            // מחיקה ישירה ללא וידוא
+        }
+    }
+
+
+
+    void DeleteCategory(CategoryToSave cat)
+// מחיקת הקטגוריה בפועל    
     {
         if (cat.ID > 0)
-            deletedCategoryIds.Add(cat.ID);
+            deletedCategoryIds.Add(cat.ID); // כדי לעדכן בכפתור שמירה
 
-        categories.Remove(cat);
+        categories.Remove(cat); // עדכון ויזואלי
 
-        // אם הקטגוריה הנבחרת נמחקה — נאפס את הבחירה
         if (selectedCategory == cat)
-            selectedCategory = null;
+            selectedCategory = null; // איפוס הקטגוריה שנבחרה
 
-        // שמירה על מינימום 3 קטגוריות ויזואלית
-        while (categories.Count < minCategories)
+        while (categories.Count < minCategories) // אם מספר הקטגוריות עכשיו קטן מהמינימום צריך להוסיף פלייסהולדר
         {
             categories.Add(new CategoryToSave { Items = new List<ItemToSave>() });
         }
 
-        contentChanged = true;
+        contentChanged = true; // יש שינוי בעריכת התוכן
+        showDeleteCategoryPopup = false; // סגירת הפופ-אפ
+        categoryToDelete = null; // איפוס קטגוריה למחיקה
     }
 
     void RemoveItem(ItemToSave item)
-    // מחיקת פריט — אם היה שמור בבסיס הנתונים נוסיף ל-DeletedItemIds
+        // מחיקת פריט — אם היה שמור בבסיס הנתונים נוסיף ל-DeletedItemIds
     {
         if (item.ID > 0)
             deletedItemIds.Add(item.ID);
@@ -430,7 +620,7 @@ else
     }
 
     void OnNoLimitChanged()
-    // בשינוי של הצ׳קבוקס זמן לכל תור
+        // בשינוי של הצ׳קבוקס זמן לכל תור
     {
         if (noLimit)
         {
@@ -449,10 +639,11 @@ else
     }
 
     async Task SaveGameSettings()
-    // בלחיצה על ״שמירה״
+        // בלחיצה על ״שמירה״
     {
         gameToEdit.GameName = gameToEdit.GameName.Trim();
-        // הפונקציה Trim מוחקת רווחים מיותרים בהתחלה ובסוף לפני השליחה לשרת
+        gameToEdit.Instructions = gameToEdit.Instructions.Trim();
+        // חקירה עצמית: הפונקציה Trim מוחקת רווחים מיותרים בהתחלה ובסוף לפני השליחה לשרת
 
         if (gameToEdit.ID == 0)
             // אם זה משחק חדש תקרא לפונקציה בשרת שיוצרת משחק חדש
@@ -488,7 +679,7 @@ else
     }
 
     void CancelChanges()
-    // בלחיצה על ביטול שינויים נרצה להחזיר את הפרטים של המשחק האחרון שנשמר
+        // בלחיצה על ביטול שינויים נרצה להחזיר את הפרטים של המשחק האחרון שנשמר
     {
         gameToEdit = new GameToAddDTO
         {
@@ -535,6 +726,7 @@ else
             contentMsg = "שגיאה בשמירה";
         }
     }
+
     async Task TriggerFileInput(string inputId)
     {
         contentMsg = ""; // לנקות את התיבת טקסט 
@@ -620,4 +812,7 @@ else
             contentChanged = true;
         }
     }
+
 }
+
+

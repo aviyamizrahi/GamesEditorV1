@@ -86,34 +86,7 @@ namespace AuthTemplate.Server.Controllers
 
             return Unauthorized("user is not authenticated");
         }
-
-        [HttpDelete("DeleteGame/{gameId}")]
-        public async Task<IActionResult> DeleteGame(int authUserId, int gameId)
-        // פונקציית מחיקת משחק
-        {
-            if (authUserId > 0)
-            {
-                object deleteParam = new
-                {
-                    ID = gameId,
-                    UserId = authUserId
-                };
-
-                string deleteQuery = "DELETE FROM Games WHERE ID = @ID";
-                int isDeleted = await _db.SaveDataAsync(deleteQuery, deleteParam);
-                if (isDeleted == 1)
-                {
-                    return Ok();
-                }
-                else
-                {
-                    return BadRequest("שגירה במחיקת משחק");
-                }
-
-            }
-
-            return Unauthorized("user is not authenticated");
-        }
+        
         
         
         // ----- EDIT GAME ----- 
@@ -321,6 +294,28 @@ namespace AuthTemplate.Server.Controllers
                 return Ok("עודכן בהצלחה");
  
             return BadRequest("שגיאה בעדכון שם תמונה");
+        }
+        
+        // ----- PUBLISH GAME STATUS ------
+        
+        
+        [HttpGet("GetPublishStatus/{gameId}")]
+        // מטרת הפונקציה היא לבדוק את סטטוס פרסום המשחק - השימוש יהיה בתוך עמוד ״עריכת משחק״
+        public async Task<IActionResult> GetPublishStatus(int authUserId, int gameId)
+        {
+            if (authUserId <= 0)
+            {
+                return Unauthorized("user is not authenticated");
+            }
+            object param = new { ID = gameId, UserId = authUserId };
+            string query = "SELECT ID, GameName, CanPublish, IsPublish, GameCode FROM Games WHERE ID = @ID AND UserId = @UserId";
+            var records = await _db.GetRecordsAsync<GameToTableDTO>(query, param);
+            GameToTableDTO game = records.FirstOrDefault();
+
+            if (game != null)
+                return Ok(game);
+
+            return BadRequest("משחק לא נמצא");
         }
     }
     

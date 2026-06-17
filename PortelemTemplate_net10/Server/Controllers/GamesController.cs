@@ -95,6 +95,61 @@ namespace AuthTemplate.Server.Controllers
             return BadRequest("Game not created");
 
         }
+        
+        [HttpDelete("DeleteGame/{gameId}")]
+        public async Task<IActionResult> DeleteGame(int authUserId, int gameId)
+            // פונקציית מחיקת משחק
+        {
+            if (authUserId <= 0)
+            {
+                return Unauthorized("user is not authenticated");
+            }
+            object deleteParam = new
+            {
+                ID = gameId,
+                UserId = authUserId
+            };
+
+            string deleteQuery = "DELETE FROM Games WHERE ID = @ID AND UserId = @UserId";
+            int isDeleted = await _db.SaveDataAsync(deleteQuery, deleteParam);
+            if (isDeleted == 1)
+            {
+                return Ok();
+            }
+            else
+            {
+                return BadRequest("שגיאה במחיקת משחק");
+            }
+        }
+        [HttpGet("GetGameToDelete/{gameId}")] // אחראית על שליפת פרטי משחק שעומד בתנאי פרסום
+        public async Task<IActionResult> GetGameToDelete(int authUserId, int gameId)
+        {
+            if (authUserId <= 0)
+            {
+                return Unauthorized("user is not authenticated");
+            }
+            
+            object param = new { ID = gameId, UserId = authUserId };
+            // וידוא שהמשחק שייך למשתמש ושליפת פרטיו
+            string gameQuery = "SELECT ID, GameName FROM Games WHERE ID = @ID AND UserId = @UserId AND (CanPublish = true OR IsPublish = true)"; // נשלוף רק משחק שעומד בתנאי הפרסום או מפורסם
+            var gameRecords = await _db.GetRecordsAsync<GameToDeleteDTO>(gameQuery, param);
+            GameToDeleteDTO game = gameRecords.FirstOrDefault();
+    
+            if (game == null)
+                return BadRequest("משחק לא נמצא");
+    
+            // ספירת קטגוריות
+            string catQuery = "SELECT COUNT(*) FROM Categories WHERE GameID = @ID";
+            var catRecords = await _db.GetRecordsAsync<int>(catQuery, param);
+            game.CategoriesCount = catRecords.FirstOrDefault();
+    
+            // ספירת פריטים
+            string itemQuery = "SELECT COUNT(*) FROM Items WHERE CategoryID IN (SELECT ID FROM Categories WHERE GameID = @ID)";
+            var itemRecords = await _db.GetRecordsAsync<int>(itemQuery, param);
+            game.ItemsCount = itemRecords.FirstOrDefault();
+    
+            return Ok(game); // נחזיר את הפרטים המעודכנים
+        }
 
        
         
@@ -144,6 +199,7 @@ namespace AuthTemplate.Server.Controllers
         
         [HttpPost("publishGame")]
         public async Task<IActionResult> publishGame(int authUserId, PublishGame game)
+         // הפונקציה יכולה גם לקבל משחק מפורסם ולבטל את הפרסום שלו -במידה ותקבל IsPublished = false
         {
             if (authUserId > 0)
             {

@@ -1,0 +1,68 @@
+
+<span>@length/@MaxLength</span>
+@* הצגת מספר התווים הנוכחי מתוך המקסימום המותר *@
+<input type="text"
+       value="@Value"
+       maxlength="@MaxLength"
+       placeholder="@Placeholder"
+       class="@inputClass"
+       @oninput="OnInput"
+       @onclick:stopPropagation="true"
+       @onfocus="OnFocus"
+       @onblur="OnBlur"/>
+@* בכל הקלדה עדכון הערך וספירת התווים *@
+@* בפוקוס על התיבה — בחירת הקטגוריה הרלוונטית *@
+@* משתנה לפי תקינות הערך בתיבה *@
+
+@code {
+    [Parameter] public string Value { get; set; } // הערך בתוך תיבת הטקסט
+    [Parameter] public EventCallback<string> ValueChanged { get; set; } // נקרא בכל פעם שיש שינוי בתיבה
+    [Parameter] public EventCallback OnFocus { get; set; } // כשהתיבה מקבלת פוקוס - משמש לבחירת קטגוריה
+    [Parameter] public EventCallback OnBlur { get; set; } // כשיש יציאה מהתיבה
+    [Parameter] public int MaxLength { get; set; } = 16; // מקסימום תווים
+    [Parameter] public int MinLength { get; set; } = 1; // מינימום תווים
+    [Parameter] public string Placeholder { get; set; } = ""; // פלייסהולדר לתיבה - משתנה בין פריטים לקטגוריות
+    
+    
+    int length = 0; // מתעדכן בכל הקלדה - אורך הטקסט
+    string inputClass = ""; //  good-input או dangerinput 
+
+    
+    protected override void OnParametersSet() // בכל פעם שפרמטר מתעדכן
+    {
+        if (Value != null)
+        {
+            length = Value.Length;
+            // עדכון ספירת התווים לפי הערך הנוכחי
+
+            if (length >= MinLength)
+                inputClass = "good-input";
+            else
+                inputClass = "danger-input";
+            // קביעת הסגנון לפי תקינות האורך
+        }
+    }
+
+   
+
+    async Task OnInput(ChangeEventArgs e) // נקראת בכל הקלדה - מקביל onkeyup בקומפוננטה CustomInputText
+    {
+        if (e.Value != null)
+        {
+            string val = e.Value.ToString();
+            // קריאת הערך החדש
+
+            length = val.Length;
+            // עדכון ספירת התווים
+
+            if (length >= MinLength)
+                inputClass = "good-input";
+            else
+                inputClass = "danger-input";
+            // עדכון הסגנון לפי האורך החדש
+
+            await ValueChanged.InvokeAsync(val);
+            // שליחת הערך החדש לרכיב האב כדי לעדכן את המשתנה שם
+        }
+    }
+}
