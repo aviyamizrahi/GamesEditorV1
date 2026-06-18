@@ -1,0 +1,44 @@
+<style>
+    .tooltip-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    .tooltip-box {
+        visibility: hidden;
+        opacity: 0;
+        position: absolute;
+        bottom: 120%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: white;
+        color: #333;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        transition: opacity 0.2s;
+        z-index: 100;
+        /* משולש למטה */
+        after: "";
+    }
+
+    .tooltip-wrapper:hover .tooltip-box {
+        visibility: visible;
+        opacity: 1;
+    }
+</style>
+
+<div class="tooltip-wrapper">
+    @ChildContent
+    @if (!string.IsNullOrEmpty(Text))
+    {
+        <div class="tooltip-box">@Text</div>
+    }
+</div>
+
+@code {
+    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public string Text { get; set; }
+}

@@ -1,9 +1,17 @@
 ﻿@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
 
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: "Open Sans", sans-serif;
     direction: rtl;
     text-align: right;
+
+}
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Alef', sans-serif;
+}
+
+button {
+    font-family: 'Alef', sans-serif;
 }
 
 h1:focus {

@@ -389,7 +389,7 @@ else
         var publishRes = await Http.GetAsync($"api/EditGame/GetPublishStatus/{gameIdToEdit}");
         if (publishRes.IsSuccessStatusCode)
         {
-            gameStatus = await publishRes.Content.ReadFromJsonAsync<GameToTableDTO>();
+            gameStatus = await publishRes.Content.ReadFromJsonAsync<GameToTableDTO>(); // שמירת מצב הפרסום הנוכחי אחרי לחיצה על כפתור ״שמירת שינויים״
             if (gameStatus.IsPublish)
                 wasEverPublished = true; // בשביל האנימציה 
         }

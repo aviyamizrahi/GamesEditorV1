@@ -215,18 +215,20 @@ namespace AuthTemplate.Server.Controllers
                 string gameName = checkRecords.FirstOrDefault();
 
                 if (gameName != null)
+                    // אם מצאנו משחק בבסיס הנתונים
                 {
-                    if (game.IsPublish)
+                    if (game.IsPublish) // אם נשלחה בקשה של פרסום - אם המשתנה הגיע חיובי זה אומר שהמשתמש רוצה לפרסם
                     {
-                        bool canPublish = await CanPublishFunc(game.ID);
-                        if (!canPublish)
+                        bool canPublish = await CanPublishFunc(game.ID); // בדיקה שאכן ניתן לפרסם את המשחק בעזרת הפונקציית עזר
+                        if (!canPublish) // אם לא ניתן לפרסם והמשחק לא עומד בתנאים
                         {
-                            return BadRequest("This game cannot be published");
+                            return BadRequest("This game cannot be published"); // לא ניתן לפרסם את המשחק
                         }
                     }
 
-                    object updateParam = new { IsPublish = game.IsPublish, ID = game.ID };
-                    string updateQuery = "UPDATE Games SET IsPublish = @IsPublish WHERE ID = @ID";
+                    object updateParam = new { IsPublish = game.IsPublish, ID = game.ID }; 
+                    string updateQuery = "UPDATE Games SET IsPublish = @IsPublish WHERE ID = @ID"; 
+                    // שם בבסיס הנתונים את הנתון שהגיע מהמשתמש - אם הגיע משתנה חיובי הוא ישים אותו חיובי - אם הגיע שלילי ישים אותו שלילי
                     int isUpdate = await _db.SaveDataAsync(updateQuery, updateParam);
 
                     if (isUpdate == 1)

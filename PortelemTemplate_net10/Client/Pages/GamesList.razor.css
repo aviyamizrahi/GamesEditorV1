@@ -1,0 +1,87 @@
+
+/* ── טבלה כללי ── */
+table {
+    width: 100%;
+    background-color: #F6F2EB;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    direction: rtl;
+}
+
+.table-wrapper {
+    width: 90%;
+    margin: 20px auto 0 auto;
+    height: 465px;
+    max-height: 465px;
+    overflow-y: auto;
+    direction: ltr; /* כדי שהסקרולבר יהיה מצד ימיןן*/
+    scrollbar-width: thin;
+    scrollbar-color: #CCCCCC #f1f1f1;
+}
+
+
+/* ── כותרות טבלה ── */
+.games-table thead tr {
+    font-family: 'Alef', sans-serif;
+    font-weight: 400;
+    font-size: 22px;
+    background-color: #4E5356;
+    color: white;
+}
+
+.games-table thead th {
+    padding: 12px 16px;
+    font-weight: 400;
+    font-size: 22px;
+    text-align: center;
+    letter-spacing: 0.3px;
+}
+
+/* ── שורות גוף הטבלה ── */
+.games-table tbody tr {
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.2);
+    transition: background-color 0.2s;
+}
+
+
+.games-table tbody tr:hover {
+    background-color: #f0e8df;
+}
+
+.games-table tbody td {
+    padding: 8px 16px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #333;
+    vertical-align: middle;
+}
+
+/* ── עמודת שם המשחק ── */
+.games-table tbody td:first-child {
+    text-align: right;
+    font-weight: 500;
+    padding-right: 20px;
+}
+
+/* ── אייקוני עריכה צפייה ומחיקה ── */
+
+.table-icon {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #000000;
+    cursor: pointer;
+    transition: color 0.2s, transform 0.15s;
+    display: inline-block;
+
+}
+
+.table-icon:hover {
+    color: #507AAF;
+    transform: scale(1.15);
+}
+
+.table-question-mark {
+    background: none;
+    border: none;
+    padding: 0;   
+}
