@@ -14,7 +14,7 @@
     }
 </style>
 
-<button @onclick='() => Nav.NavigateTo("/GamesList")' disabled="@(gameIdToEdit == 0 && gameToEdit.ID == 0)" >חזרה למשחקים שלי</button>
+<button @onclick="HandleBackNavigation">חזרה למשחקים שלי</button>
 @* הכפתור יהיה פעיל רק במידה ומשחק חדש נשמר ויש לו מספר id בבסיס הנתונים *@
 
 @if (gameStatus.IsPublish)
@@ -82,8 +82,8 @@ else
         <ValidationMessage For="@(() => gameToEdit.GameName)" />
         <br />
         <input type="submit" value="שמירה" disabled="@(!context.Validate() || !canSave)" />
-        <input type="button" value="ביטול שינויים" disabled="@(!canSave || string.IsNullOrEmpty(originalGame.GameName))" @onclick="CancelChanges" />
-        @* ביטול שינויים פעיל במידה ונעשו שינויים מהמשחק המקורי, ביצירת משחק חדש ביטול שינויים פעיל רק בשינוי של ההנחיה המקורית *@
+        <input type="button" value="ביטול שינויים" disabled="@(!canSave || gameToEdit.ID == 0)" @onclick="CancelChanges" />
+        @* ביטול שינויים פעיל במידה ונעשו שינויים מהמשחק המקורי, ביצירת משחק חדש ביטול שינויים פעיל רק בשינוי אחרי שמירה ראשונה *@
     </EditForm>
 
     <br />
@@ -151,7 +151,8 @@ else
                                            MaxLength="16" />
                     }
 
-                    <button @onclick="() => RemoveItem(item)" @onclick:stopPropagation="true">מחק</button>
+                    <button @onclick="() => RemoveItem(item)" @onclick:stopPropagation="true"
+                            disabled="@(string.IsNullOrEmpty(item.Content) && selectedCategory.Items.Count <= minItems)">מחק</button>
                 </div>
             }
             @if (!string.IsNullOrEmpty(selectedCategory.Content))
@@ -223,7 +224,8 @@ else
                 @* בלחיצה על תיבת הטקסט הקטגוריה תיבחר *@
 
                 @* מחיקת קטגוריה — stopPropagation מונע בחירת הקטגוריה בעת לחיצה על מחק *@
-                <button @onclick="() => RemoveCategory(cat)" @onclick:stopPropagation="true">מחק</button>
+                <button @onclick="() => RemoveCategory(cat)" @onclick:stopPropagation="true"
+                        disabled="@(string.IsNullOrEmpty(cat.Content) && categories.Count <= minCategories)">מחק</button>
             </div>
         }
 
@@ -253,7 +255,8 @@ else
        Title="פרסום משחק"
        ConfirmText="פרסום משחק"
        OnConfirm="ConfirmPublish"
-       OnCancel="() => showPublishPopup = false">
+       OnCancel="() => showPublishPopup = false"
+       OnClose="() => showPublishPopup = false">
     <p>האם ברצונך לפרסם את המשחק "@displayName" לפי עונות השנה?</p>
     <p>קוד משחק: @gameStatus.GameCode</p>
 </PopUp>
@@ -262,7 +265,8 @@ else
        Title="מחיקת קטגוריה"
        ConfirmText="מחיקה"
        OnConfirm="() => DeleteCategory(categoryToDelete)"
-       OnCancel="() => showDeleteCategoryPopup = false">
+       OnCancel="() => showDeleteCategoryPopup = false"
+       OnClose="() => showDeleteCategoryPopup = false">
     @if (deleteBreaksPublish)
     {
         <p>לקטגוריה זו קיימים
@@ -275,6 +279,17 @@ else
         <p>לקטגוריה זו קיימים @categoryToDeleteItemsCount פריטים,</p>
         <p>האם למחוק בכל זאת?</p>
     }
+</PopUp>
+
+<PopUp IsVisible="@showUnsavedChangesPopup"
+       Title="שמירת שינויים"
+       ConfirmText="שמור שינויים"
+       CancelText="לא לשמור"
+       OnConfirm="SaveAndNavigate"
+       OnCancel="NavigateWithoutSaving"
+       OnClose="() => showUnsavedChangesPopup = false">
+    <p>לפני חזרה לעמוד המשחקים שלי,</p>
+    <p>האם לשמור את השינויים שבוצעו?</p>
 </PopUp>
 
 @code {
@@ -295,6 +310,8 @@ else
     string msg = "";
     bool isSettingsOpen; // במידה וזה משחק חדש האקורדיון של ההגדרות יהיה כבר פתוח
     bool showPublishPopup = false; // האם להראות פופ אפ פרסום
+    bool showUnsavedChangesPopup = false; // פופ-אפ שמירת שינויים (בלחיצה על ״בחזרה למשחקים שלי״)
+
 
 
     // ── עריכת תוכן ── //
@@ -303,6 +320,9 @@ else
     bool contentChanged = false;
     string contentMsg = "";
     string validationMsg = "";
+    // רשימות של IDs שנמחקו — ישלחו לשרת בעת שמירה
+    List<int> deletedCategoryIds = new List<int>();
+    List<int> deletedItemIds = new List<int>();
 
     // ── מחיקת קטגוריה ── //
     bool showDeleteCategoryPopup = false;
@@ -314,16 +334,12 @@ else
     // ── העלאת תמונה ── //
     long maxFileSize = 4194304;
 
-
-    // רשימות של IDs שנמחקו — ישלחו לשרת בעת שמירה
-    List<int> deletedCategoryIds = new List<int>();
-    List<int> deletedItemIds = new List<int>();
-
+    
     // ── תנאים למינימום פיריטים וקטגוריות ── //
-
     int minCategories = 3; // מינימום קטגוריות
     int minItems = 6; // מינימום פריטים לקטגוריה
 
+    
 
     // ── טעינה ראשונית ── //
     protected override async Task OnParametersSetAsync()
@@ -720,11 +736,37 @@ else
             deletedItemIds = new List<int>();
             // טעינה מחדש מהשרת כדי לקבל IDים מעודכנים
             await LoadGameContent();
+            await LoadPublishStatus(); // אולי מצב הפרסום השתנה - צריך לבדוק
+
         }
         else
         {
             contentMsg = "שגיאה בשמירה";
         }
+    }
+    
+    void HandleBackNavigation() // ההחלטה אם לפתוח את הפופ-אפ ״בחזרה למשחקים שלי״ או פשוט לחזור אחורה
+    {
+        if (canSave || contentChanged )  // אם יש שינויים שלא נשמרו
+            showUnsavedChangesPopup = true; // תפתח את הפופ-אפ
+        else
+            Nav.NavigateTo("/GamesList"); // אם הכל שמור פשוט תחזור אחורה
+    }
+
+    async Task SaveAndNavigate() // לחיצה על ״שמירת שינויים״ בפופ-אפ ״בחזרה למשחקים שלי״
+    {
+        if (contentChanged)
+            await SaveContent();
+        if (canSave)
+            await SaveGameSettings();
+        showUnsavedChangesPopup = false;
+        Nav.NavigateTo("/GamesList");
+    }
+
+    void NavigateWithoutSaving() // לחיצה על כפתור ״לא לשמור״ בפופ-אפ ״בחזרה למשחקים שלי״
+    {
+        showUnsavedChangesPopup = false;
+        Nav.NavigateTo("/GamesList");
     }
 
     async Task TriggerFileInput(string inputId)
