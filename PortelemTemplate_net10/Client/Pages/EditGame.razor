@@ -345,6 +345,7 @@ else
     protected override async Task OnParametersSetAsync()
         // כאשר הוגדר פרמטר וקיבלנו מספר דרך הנתיב
     {
+       
         if (gameIdToEdit == 0) // אם זה משחק חדש
         {
             gameToEdit = new GameToAddDTO(); // איפוס משתנה
@@ -630,6 +631,7 @@ else
     // ── הגדרות משחק: שמירה ── //
     void CheckCanSave()
     {
+        // אם משהו השתנה באחד מהתכנים מהגרסה המקורית
         canSave = gameToEdit.GameName != originalGame.GameName
                   || gameToEdit.RoundTime != originalGame.RoundTime
                   || gameToEdit.Instructions != originalGame.Instructions;
@@ -672,6 +674,12 @@ else
                 displayName = gameToEdit.GameName;
                 msg = "המשחק נוצר בהצלחה";
                 canSave = false;
+                originalGame = new GameToAddDTO // שמירת גרסה לתוך המשתנה
+                {
+                    GameName = gameToEdit.GameName,
+                    RoundTime = gameToEdit.RoundTime,
+                    Instructions = gameToEdit.Instructions
+                };
                 await LoadGameContent(); // עכשיו יש ID אז אפשר לטעון פלייסהולדרים
             }
         }

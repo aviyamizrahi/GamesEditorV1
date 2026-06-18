@@ -183,7 +183,6 @@ namespace AuthTemplate.Server.Controllers
                         isUpdate = await _db.SaveDataAsync(updateQuery, param);
                         return canPublish;
                     }
-                    
                 }
                 canPublish = true;
                 updateQuery = "UPDATE Games SET CanPublish = true WHERE ID = @ID";
@@ -195,6 +194,13 @@ namespace AuthTemplate.Server.Controllers
             updateQuery = "UPDATE Games SET IsPublish = false, CanPublish = false WHERE ID = @ID";
             isUpdate = await _db.SaveDataAsync(updateQuery, param);
             return canPublish;
+        }
+        
+        [HttpPost("CheckCanPublish/{gameId}")] // המטרה: לבדוק אם ניתן לפרסם את המשחק בעזרת הפונקציית עזר, נוכל להשתמש בצד לקוח
+        public async Task<IActionResult> CheckCanPublish(int gameId)
+        {
+            bool canPublish = await CanPublishFunc(gameId);
+            return Ok(canPublish);
         }
         
         [HttpPost("publishGame")]
