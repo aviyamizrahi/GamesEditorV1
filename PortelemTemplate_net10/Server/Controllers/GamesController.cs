@@ -196,7 +196,8 @@ namespace AuthTemplate.Server.Controllers
             return canPublish;
         }
         
-        [HttpPost("CheckCanPublish/{gameId}")] // המטרה: לבדוק אם ניתן לפרסם את המשחק בעזרת הפונקציית עזר, נוכל להשתמש בצד לקוח
+        [HttpPost("CheckCanPublish/{gameId}")] 
+        // המטרה: לבדוק אם ניתן לפרסם את המשחק בעזרת הפונקציית עזר, נוכל להשתמש בצד לקוח
         public async Task<IActionResult> CheckCanPublish(int gameId)
         {
             bool canPublish = await CanPublishFunc(gameId);

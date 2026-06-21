@@ -31,7 +31,7 @@ else
 }
 
 
-@if (String.IsNullOrEmpty(displayName))
+@if (String.IsNullOrWhiteSpace(displayName))
 {
     <h2>עריכת משחק</h2>
 }
@@ -115,22 +115,22 @@ else
                         <input type="radio"
                                name="item-type-@i"
                                checked="@(!item.IsImage)"
-                               disabled="@(!string.IsNullOrEmpty(item.Content) && item.IsImage)"
-                               @onchange="() => { item.IsImage = false; contentChanged = true; }" />
+                               disabled="@(!string.IsNullOrWhiteSpace(item.Content) && item.IsImage)"
+                               @onchange="() => { item.IsImage = false; }" />
                         טקסט
                     </label>
                     <label>
                         <input type="radio"
                                name="item-type-@i"
                                checked="@item.IsImage"
-                               disabled="@(!string.IsNullOrEmpty(item.Content) && !item.IsImage)"
-                               @onchange="() => { item.IsImage = true; contentChanged = true; }" />
+                               disabled="@(!string.IsNullOrWhiteSpace(item.Content) && !item.IsImage)"
+                               @onchange="() => { item.IsImage = true; }" />
                         תמונה
                     </label>
 
                     @if (item.IsImage)
                     {
-                        @if (!string.IsNullOrEmpty(item.Content)) // אם יש תוכן בעמודה
+                        @if (!string.IsNullOrWhiteSpace(item.Content)) // אם יש תוכן בעמודה
                         {
                             <img src="uploadedFiles/@item.Content" alt="פריט" style="width:80px; height:80px;" />
                             <button type="button" @onclick="() => DeleteItemImage(item)"
@@ -146,16 +146,16 @@ else
                     else
                     {
                         <CustomInputSimple Value="@item.Content"
-                                           ValueChanged="v => { item.Content = v; contentChanged = true; }"
+                                           ValueChanged="v => { item.Content = v;MarkContentChanged(); }"
                                            Placeholder="שם פריט..."
                                            MaxLength="16" />
                     }
 
                     <button @onclick="() => RemoveItem(item)" @onclick:stopPropagation="true"
-                            disabled="@(string.IsNullOrEmpty(item.Content) && selectedCategory.Items.Count <= minItems)">מחק</button>
+                            disabled="@(string.IsNullOrWhiteSpace(item.Content) && selectedCategory.Items.Count <= minItems)">מחק</button>
                 </div>
             }
-            @if (!string.IsNullOrEmpty(selectedCategory.Content))
+            @if (!string.IsNullOrWhiteSpace(selectedCategory.Content))
                 // כפתור הוספת פריט - קיים ופעיל רק במידה ויש תוכן בקטגוריה, ניתן להוסיף פריטים ללא הגבלה
             {
                 <button @onclick="AddItem">+ פריט</button>
@@ -174,15 +174,15 @@ else
             CategoryToSave cat = categories[i]; // שימוש יותר נוח בקטגוריה הנוכחית בלולאה
             string catInputId = "cat_" + i.ToString();  // שימוש באינדקס במקום ID כדי למנוע התנגשות בין קטגוריות ריקות
 
-            <div @onclick="() => SelectCategory(cat)" class="@(selectedCategory == cat ? "selected-category" : "")" style="border: 1px solid black; padding: 5px">
+            <div @key="cat" @onclick="() => SelectCategory(cat)" class="@(selectedCategory == cat ? "selected-category" : "")" style="border: 1px solid black; padding: 5px">
                 @* אם הקטגוריה הנוכחית היא זו שנבחרה — מוסיפים מחלקת עיצוב מודגשת, אחרת ללא מחלקה *@
 
                 <label>
                     <input type="radio"
                            name="cat-type-@i"
                            checked="@(!cat.IsImage)"
-                           disabled="@(!string.IsNullOrEmpty(cat.Content) && cat.IsImage)"
-                           @onchange="() => { cat.IsImage = false; contentChanged = true; }"
+                           disabled="@(!string.IsNullOrWhiteSpace(cat.Content) && cat.IsImage)"
+                           @onchange="() => { cat.IsImage = false;  }"
                            @onclick:stopPropagation="true"/>
                     טקסט
                 </label>
@@ -190,15 +190,15 @@ else
                     <input type="radio"
                            name="cat-type-@i"
                            checked="@cat.IsImage"
-                           disabled="@(!string.IsNullOrEmpty(cat.Content) && !cat.IsImage)"
-                           @onchange="() => { cat.IsImage = true; contentChanged = true; }"
+                           disabled="@(!string.IsNullOrWhiteSpace(cat.Content) && !cat.IsImage)"
+                           @onchange="() => { cat.IsImage = true;  }"
                            @onclick:stopPropagation="true"/>
                     תמונה
                 </label>
 
                 @if (cat.IsImage)
                 {
-                    @if (!string.IsNullOrEmpty(cat.Content)) // אם יש תמונה — הצג אותה עם אפשרות מחיקה
+                    @if (!string.IsNullOrWhiteSpace(cat.Content)) // אם יש תמונה — הצג אותה עם אפשרות מחיקה
                     {
                         <img src="uploadedFiles/@cat.Content" alt="קטגוריה" style="width:80px; height:80px;"/>
                         <button type="button" @onclick="() => DeleteCategoryImage(cat)"
@@ -214,7 +214,7 @@ else
                 else // טקסט — הצג תיבת קלט
                 {
                     <CustomInputSimple Value="@cat.Content"
-                                       ValueChanged="v => { cat.Content = v; contentChanged = true; }"
+                                       ValueChanged="v => { cat.Content = v; MarkContentChanged(); }"
                                        OnFocus="() => SelectCategory(cat)"
                                        OnBlur="() => SelectCategory(cat)"
                                        Placeholder="שם קטגוריה..."
@@ -225,7 +225,7 @@ else
 
                 @* מחיקת קטגוריה — stopPropagation מונע בחירת הקטגוריה בעת לחיצה על מחק *@
                 <button @onclick="() => RemoveCategory(cat)" @onclick:stopPropagation="true"
-                        disabled="@(string.IsNullOrEmpty(cat.Content) && categories.Count <= minCategories)">מחק</button>
+                        disabled="@(string.IsNullOrWhiteSpace(cat.Content) && categories.Count <= minCategories)">מחק</button>
             </div>
         }
 
@@ -237,7 +237,7 @@ else
     </div>
 
     @* ── שגיאות ולידציה ── *@
-    @if (!string.IsNullOrEmpty(validationMsg))
+    @if (!string.IsNullOrWhiteSpace(validationMsg))
     {
         <p>@validationMsg</p>
     }
@@ -395,6 +395,11 @@ else
         }
     }
 
+    async Task UpdateCanPublishStatus()
+    {
+        await Http.PostAsync($"api/Games/CheckCanPublish/{gameToEdit.ID}", null);
+        await LoadPublishStatus();
+    }
 
     async Task LoadGameContent()
     {
@@ -470,7 +475,7 @@ else
         if (cat.Items == null)
             cat.Items = new List<ItemToSave>();
 
-        if (!string.IsNullOrEmpty(cat.Content)) // רק אם לקטגוריה יש תוכן (תמונה או טקסט)
+        if (!string.IsNullOrWhiteSpace(cat.Content)) // רק אם לקטגוריה יש תוכן (תמונה או טקסט)
         {
             while (cat.Items.Count < minItems) // כל עוד רשימת הפריטים מונה פחות מכמות הפריטים המינימלית (6 פריטים)
             {
@@ -494,7 +499,6 @@ else
         if (categories.Count < 5)
         {
             categories.Add(new CategoryToSave { Items = new List<ItemToSave>() });
-            contentChanged = true;
         }
     }
 
@@ -504,7 +508,6 @@ else
         if (selectedCategory != null)
         {
             selectedCategory.Items.Add(new ItemToSave { CategoryID = selectedCategory.ID });
-            contentChanged = true;
         }
     }
 
@@ -519,7 +522,7 @@ else
         {
             foreach (ItemToSave item in cat.Items)
             {
-                if (!string.IsNullOrEmpty(item.Content))
+                if (!string.IsNullOrWhiteSpace(item.Content))
                 {
                     hasItems = true;
                     itemsCount++;
@@ -531,12 +534,12 @@ else
         int validCategoriesCount = 0;
         foreach (CategoryToSave c in categories)
         {
-            if (!string.IsNullOrEmpty(c.Content)) // אם יש תוכן לקטגוריה
+            if (!string.IsNullOrWhiteSpace(c.Content)) // אם יש תוכן לקטגוריה
             {
                 int itemsWithContent = 0; // יסכום את הקטגוריות
                 foreach (ItemToSave item in c.Items) // מעבר על הפריטים של אותה קטגוריה
                 {
-                    if (!string.IsNullOrEmpty(item.Content)) // אם לפריט הזה יש תוכן
+                    if (!string.IsNullOrWhiteSpace(item.Content)) // אם לפריט הזה יש תוכן
                         itemsWithContent++; // תסכום גם אותו
                 }
 
@@ -580,7 +583,7 @@ else
             categories.Add(new CategoryToSave { Items = new List<ItemToSave>() });
         }
 
-        contentChanged = true; // יש שינוי בעריכת התוכן
+        MarkContentChanged(); // יש שינוי בעריכת התוכן
         showDeleteCategoryPopup = false; // סגירת הפופ-אפ
         categoryToDelete = null; // איפוס קטגוריה למחיקה
     }
@@ -596,7 +599,7 @@ else
         // שמירה על מינימום 6 פריטים ויזואלית אם לקטגוריה יש תוכן
         EnsureMinItems(selectedCategory);
 
-        contentChanged = true;
+        MarkContentChanged();
     }
 
     // ── ולידציה לפני שמירה ── //
@@ -605,7 +608,7 @@ else
     {
         foreach (var cat in categories)
         {
-            if (cat.ID > 0 && string.IsNullOrEmpty(cat.Content) && !cat.IsImage)
+            if (cat.ID > 0 && string.IsNullOrWhiteSpace(cat.Content) && !cat.IsImage)
             {
                 validationMsg = "לא ניתן לשמור קטגוריה ריקה — מחק אותה או הוסף תוכן";
                 return false;
@@ -615,7 +618,7 @@ else
             {
                 foreach (var item in cat.Items)
                 {
-                    if (item.ID > 0 && string.IsNullOrEmpty(item.Content) && !item.IsImage)
+                    if (item.ID > 0 && string.IsNullOrWhiteSpace(item.Content) && !item.IsImage)
                     {
                         validationMsg = "לא ניתן לשמור פריט ריק — מחק אותו או הוסף תוכן";
                         return false;
@@ -631,10 +634,13 @@ else
     // ── הגדרות משחק: שמירה ── //
     void CheckCanSave()
     {
+        msg = "";
         // אם משהו השתנה באחד מהתכנים מהגרסה המקורית
-        canSave = gameToEdit.GameName != originalGame.GameName
-                  || gameToEdit.RoundTime != originalGame.RoundTime
-                  || gameToEdit.Instructions != originalGame.Instructions;
+        canSave = (gameToEdit.GameName != originalGame.GameName
+                   || gameToEdit.RoundTime != originalGame.RoundTime
+                   || gameToEdit.Instructions != originalGame.Instructions)
+                  && !string.IsNullOrWhiteSpace(gameToEdit.GameName)
+                  && !string.IsNullOrWhiteSpace(gameToEdit.Instructions);
     }
 
     void OnNoLimitChanged()
@@ -673,6 +679,7 @@ else
                 gameToEdit.ID = newGame.ID;
                 displayName = gameToEdit.GameName;
                 msg = "המשחק נוצר בהצלחה";
+                msg = "";
                 canSave = false;
                 originalGame = new GameToAddDTO // שמירת גרסה לתוך המשתנה
                 {
@@ -719,15 +726,40 @@ else
         canSave = false;
         msg = "";
     }
+    
+    void MarkContentChanged()
+    // המטרה: להגיד שיש שינוי בעריכת התוכן וגם לנקות את התיבה
+    {
+        contentChanged = true;;
+        contentMsg = "";
+    }
 
     // ── שמירת תוכן ── //
     async Task SaveContent()
+    // מטרתה של הפונקציה היא:
+    // 1. לבדוק שהתוכן שהוזן נכון 
+    // 2. לשלוח את המופע - משחק שלם שמכיל את כל השינויים שהמשתמש עשה
+    //3. טוען את התוכן חזרה מהשרת כדי לעדכן קטגוריות / פריטים שהתווספו
+    // 4. בדיקת מצב הפרסום
     {
         // ולידציה לפני שליחה לשרת
         if (!ValidateContent())
             return;
 
-        var fullGame = new FullGameToSave
+        foreach (var cat in categories)
+            // כדי למנוע תווים מיותרים כמו רווחים בסוף או בהתחלה של התוכן - נעשה זאת לפני השליחה של הנתונים לשרת
+        {
+            if (!string.IsNullOrWhiteSpace(cat.Content))
+                cat.Content = cat.Content.Trim();
+            foreach (var item in cat.Items ?? new List<ItemToSave>())
+            {
+                if (!string.IsNullOrWhiteSpace(item.Content))
+                    item.Content = item.Content.Trim();
+            }
+        }
+
+        
+        FullGameToSave fullGame = new FullGameToSave
         {
             Categories = categories,
             DeletedCategoryIds = deletedCategoryIds,
@@ -744,7 +776,7 @@ else
             deletedItemIds = new List<int>();
             // טעינה מחדש מהשרת כדי לקבל IDים מעודכנים
             await LoadGameContent();
-            await LoadPublishStatus(); // אולי מצב הפרסום השתנה - צריך לבדוק
+            await UpdateCanPublishStatus();; // אולי מצב הפרסום השתנה - צריך לבדוק
 
         }
         else
@@ -805,7 +837,7 @@ else
             // שמירה מיידית של שם התמונה ב-DB
             if (item.ID > 0)
                 await Http.PostAsJsonAsync($"api/EditGame/UpdateItemImage/{item.ID}", newFileName);
-            contentChanged = true;
+            MarkContentChanged();
         }
     }
 
@@ -831,13 +863,13 @@ else
             // שמירה מיידית של שם התמונה ב-DB
             if (cat.ID > 0)
                 await Http.PostAsJsonAsync($"api/EditGame/UpdateCategoryImage/{cat.ID}", newFileName);
-            contentChanged = true;
+            MarkContentChanged();
         }
     }
 
     async Task DeleteItemImage(ItemToSave item)
     {
-        if (string.IsNullOrEmpty(item.Content)) return;
+        if (string.IsNullOrWhiteSpace(item.Content)) return;
 
         var imagesToDelete = new List<string> { item.Content };
         var deleteRes = await Http.PostAsJsonAsync("api/Media/deleteImages", imagesToDelete);
@@ -845,13 +877,13 @@ else
         if (deleteRes.IsSuccessStatusCode)
         {
             item.Content = "";
-            contentChanged = true;
+            MarkContentChanged();
         }
     }
 
     async Task DeleteCategoryImage(CategoryToSave cat)
     {
-        if (string.IsNullOrEmpty(cat.Content)) return;
+        if (string.IsNullOrWhiteSpace(cat.Content)) return;
 
         var imagesToDelete = new List<string> { cat.Content };
         var deleteRes = await Http.PostAsJsonAsync("api/Media/deleteImages", imagesToDelete);
@@ -859,7 +891,7 @@ else
         if (deleteRes.IsSuccessStatusCode)
         {
             cat.Content = "";
-            contentChanged = true;
+            MarkContentChanged();
         }
     }
 

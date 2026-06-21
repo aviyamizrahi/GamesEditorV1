@@ -169,7 +169,7 @@ namespace AuthTemplate.Server.Controllers
                 foreach (var cat in fullGame.Categories)
                 {
                     // דלג על קטגוריות ריקות לחלוטין
-                    if (string.IsNullOrEmpty(cat.Content))
+                    if (string.IsNullOrWhiteSpace(cat.Content))
                         continue;
 
                     if (cat.ID == 0)
@@ -185,7 +185,7 @@ namespace AuthTemplate.Server.Controllers
                         foreach (var item in cat.Items)
                         {
                             // דלג על פריטים ריקים לחלוטין
-                            if (string.IsNullOrEmpty(item.Content))
+                            if (string.IsNullOrWhiteSpace(item.Content))
                                 continue;
 
                             item.CategoryID = cat.ID; // וידוא שהפריט משויך לקטגוריה הנכונה

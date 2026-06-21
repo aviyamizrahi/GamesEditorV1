@@ -241,6 +241,7 @@ else
     {
         PublishGame gameToSend = new PublishGame
         {
+            // נשלח לפונקציה שמשנה את מצב הפרסום משתנה שהוא בדיוק ההפך מהמצב הקיים - שזה מה שהמשתמש רוצה לעשות
             ID = game.ID,
             IsPublish = !game.IsPublish
         };
@@ -249,11 +250,11 @@ else
 
         if (userRes.IsSuccessStatusCode)
         {
-            game.IsPublish = !game.IsPublish;
+            game.IsPublish = !game.IsPublish; // שינוי ויזואלי 
         }
         else
         {
-            string error = await userRes.Content.ReadAsStringAsync();
+            string error = await userRes.Content.ReadAsStringAsync(); // אם יש איזשהי בעיה
             if (error == "This game cannot be published")
             {
                 game.IsPublish = false;
