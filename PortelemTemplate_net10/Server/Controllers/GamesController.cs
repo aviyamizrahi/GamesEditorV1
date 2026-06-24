@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using UsersManager.Server;
 using UsersManager.Shared;
+using AuthTemplate.Server.Helpers;
+using FilesManage = AuthTemplate.Server.Helpers.FilesManage;
 
 namespace AuthTemplate.Server.Controllers
 {
@@ -18,11 +20,16 @@ namespace AuthTemplate.Server.Controllers
     public class GamesController : ControllerBase
     {
         private readonly DbRepository _db; // משתנה פרטי שנגיש רק מתוך המחלקה ושלא צריך לעדכן אותו בכלל 
+        private readonly FilesManage _filesManage; // למחיקת התמונות בזמן מחיקת משחק
 
-        public GamesController(DbRepository db)
+
+        public GamesController(DbRepository db, FilesManage filesManage) // הוספנו פרמטר
         {
-            _db = db; // כדי לא לפגוע במקור, שמירה של עותק פרטי, כל אחד יעבוד עם עותק משלו, למנוע מצב של דריסה
+            // כדי לא לפגוע במקור, שמירה של עותק פרטי, כל אחד יעבוד עם עותק משלו, למנוע מצב של דריס
+            _db = db;
+            _filesManage = filesManage; 
         }
+        
         
         // GAMES // 
 
@@ -96,11 +103,11 @@ namespace AuthTemplate.Server.Controllers
 
         }
         
-        [HttpDelete("DeleteGame/{gameId}")]
+        [HttpDelete("DeleteGame/{gameId}")] // מטרת הפונקציה: מחיקת משחק
         public async Task<IActionResult> DeleteGame(int authUserId, int gameId)
             // פונקציית מחיקת משחק
         {
-            if (authUserId <= 0)
+            if (authUserId <= 0) // בדיקה שזה מספר תקין
             {
                 return Unauthorized("user is not authenticated");
             }
@@ -110,17 +117,28 @@ namespace AuthTemplate.Server.Controllers
                 UserId = authUserId
             };
 
+            // שליפת שמות תמונות של פריטים לפני המחיקה
+            string allImagesQuery = "SELECT Content FROM Items WHERE IsImage = true AND CategoryID IN (SELECT ID FROM Categories WHERE GameID = @ID) UNION SELECT Content FROM Categories WHERE IsImage = true AND GameID = @ID";
+            var allImages = await _db.GetRecordsAsync<string>(allImagesQuery, new { ID = gameId });
+            
             string deleteQuery = "DELETE FROM Games WHERE ID = @ID AND UserId = @UserId";
             int isDeleted = await _db.SaveDataAsync(deleteQuery, deleteParam);
-            if (isDeleted == 1)
-            {
-                return Ok();
-            }
+                if (isDeleted == 1)
+                {
+                    // מחיקת התמונות מהתיקייה
+                    foreach (string img in allImages)
+                    {
+                        _filesManage.DeleteFile(img, "uploadedFiles");
+                    }
+                    return Ok();
+                }
             else
             {
                 return BadRequest("שגיאה במחיקת משחק");
             }
         }
+        
+        
         [HttpGet("GetGameToDelete/{gameId}")] // אחראית על שליפת פרטי משחק שעומד בתנאי פרסום
         public async Task<IActionResult> GetGameToDelete(int authUserId, int gameId)
         {

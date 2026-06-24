@@ -7,21 +7,19 @@
     .tooltip-box {
         visibility: hidden;
         opacity: 0;
-        position: absolute;
-        bottom: 120%;
-        left: 50%;
-        transform: translateX(-50%);
+        position: fixed;
+        width: max-content;
+        font-family: "Open Sans";
         background-color: white;
         color: #333;
-        padding: 8px 12px;
+        padding: 4px 8px;
         border-radius: 8px;
         font-size: 0.85rem;
-        white-space: nowrap;
+        border:  1.8px solid black;
+        white-space: normal;
         box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         transition: opacity 0.2s;
-        z-index: 100;
-        /* משולש למטה */
-        after: "";
+        z-index: 1000;
     }
 
     .tooltip-wrapper:hover .tooltip-box {
@@ -30,15 +28,18 @@
     }
 </style>
 
+
 <div class="tooltip-wrapper">
-    @ChildContent
-    @if (!string.IsNullOrEmpty(Text))
+    @ChildContent 
+    @if (!string.IsNullOrEmpty(Text)) 
     {
-        <div class="tooltip-box">@Text</div>
+        <div class="tooltip-box" style="max-width: @(MaxWidth)px;">@((MarkupString)Text)</div>
+        // מתייחס לטקסט כhtml ולא טקסט רגיל
     }
 </div>
 
 @code {
     [Parameter] public RenderFragment ChildContent { get; set; }
     [Parameter] public string Text { get; set; }
+    [Parameter] public int MaxWidth { get; set; } = 120; // ברירת מחדל של רוחב 120 פיקסלים
 }

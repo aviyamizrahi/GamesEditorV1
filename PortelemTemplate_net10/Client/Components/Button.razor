@@ -1,0 +1,101 @@
+
+<style>
+    
+    /*PRIMARY BTN*/
+    .primary-btn {
+        background-color: #EBE3D8;
+        border: 2px solid #911627;
+        border-radius: 6px;
+        padding: 2px;
+        margin-top: 16px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .primary-btn  .text-wrap {
+        background-color: #911627;
+        color: #EBE3D8;
+        font-family: 'Alef', sans-serif;
+        font-weight: 700;
+        font-size: 20px;
+        border-radius: inherit;
+        padding: 0 10px;
+    }
+    
+
+    .primary-btn:hover .text-wrap{
+        background-color: #6B0B18;
+    }
+
+    .primary-btn:active .text-wrap{
+        background-color: #911627;
+        box-shadow: inset 2px -3px rgba(0, 0, 0, 0.4);
+    }
+
+    .primary-btn-disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    /*SECONDERY BTN*/
+    
+    .secondary-btn {
+        background-color: #FAF9F9;
+        border: 2px solid #911627;
+        border-radius: 6px;
+        padding: 2px 8px;
+        margin-top: 16px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #911627;
+        font-family: 'Alef', sans-serif;
+        font-weight: 700;
+        font-size: 18px;
+        
+    }
+
+    .secondary-btn:hover {
+        background-color: #FFF4F4;
+        color: #911627;
+        box-shadow:  -1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .secondary-btn:active {
+        background-color: #FFF4F4;
+        box-shadow: inset 1px -2px rgba(0, 0, 0, 0.2);
+    }
+
+    .secondary-btn-disabled {
+        background-color: #FAF9F9;
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    
+</style>
+
+@* מטרת הקומפוננטה: *@
+@* כפתור ראשי או משני, תלוי באפיון *@
+
+<button class="btn @(Variant == "primary" ? "primary-btn" : "secondary-btn") @(Disabled ? "btn-disabled" : "")"
+        disabled="@Disabled"
+        @onclick="OnClick">
+    <span class="text-wrap">
+        @Text 
+    </span>
+</button>
+
+
+
+@code {
+    [Parameter] public string Variant { get; set; } // זה מה שיחליט אם הכפתור נראה כמו כפתור ראשי או משני
+    [Parameter] public string Text { get; set; }
+    [Parameter] public EventCallback OnClick { get; set; }
+    [Parameter] public bool Disabled { get; set; } = false;
+}

@@ -1,9 +1,13 @@
-.content[b-blyqc8ygrt]{
+.content[b-blyqc8ygrt] {
     padding: 1rem;
     width: 1280px;
     margin: 0 auto;
-    background-color: white;
 }
-.page[b-blyqc8ygrt]{
-    background-color: lightgray;
+.page[b-blyqc8ygrt] {
+    background-image: url('./Images/newBackground.png');
+    background-repeat: repeat;
+    background-size: 100%;
+    min-height: 100vh;
+    margin: -1rem;
+
 }

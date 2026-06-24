@@ -7,6 +7,11 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 
+
+<head>
+    <title>עריכת משחק - איקס מיון</title>
+</head>
+
 <style>
     .selected-category {
         border: 2px solid blue;
@@ -33,11 +38,11 @@ else
 
 @if (String.IsNullOrWhiteSpace(displayName))
 {
-    <h2>עריכת משחק</h2>
+    <h1>עריכת משחק</h1>
 }
 else
 {
-    <h2>עריכת משחק ״@displayName״</h2>
+    <h1>עריכת משחק ״@displayName״</h1>
 }
 
 @* ──────────────── הגדרות משחק ───────────────── *@
@@ -247,6 +252,19 @@ else
     <button disabled="@(!contentChanged)" @onclick="SaveContent">שמירת שינויים</button>
     <p>@contentMsg</p>
 
+    @* ── לוח סבבים ── *@
+    @if (showBoard) 
+    {
+        <div>
+            <span>סה״כ פריטים במשחק: </span> <b>@totalItems</b>
+            <span>כמות סבבים נוכחית: </span> <b>@rounds</b>
+            @if (missingItems > 0)
+            {
+                <span>שימו לב ! כדי להשלים סבב נוסף יש להוסיף עוד </span> <b>@missingItems</b> <span>פריטים</span>
+            }
+        </div>
+    }
+
 </AccordionSection>
 
 @* ── פופאפים ── *@
@@ -312,8 +330,7 @@ else
     bool showPublishPopup = false; // האם להראות פופ אפ פרסום
     bool showUnsavedChangesPopup = false; // פופ-אפ שמירת שינויים (בלחיצה על ״בחזרה למשחקים שלי״)
 
-
-
+    
     // ── עריכת תוכן ── //
     List<CategoryToSave> categories = new List<CategoryToSave>();
     CategoryToSave selectedCategory = null;
@@ -323,7 +340,14 @@ else
     // רשימות של IDs שנמחקו — ישלחו לשרת בעת שמירה
     List<int> deletedCategoryIds = new List<int>();
     List<int> deletedItemIds = new List<int>();
-
+    
+    // ── ספירת סבבים ── //
+    int totalItems = 0; // ספירת פריטים
+    int rounds = 0; // ספירת סבבים
+    int missingItems = 0; // כמה פריטים צריך להוסיף עד להשלמת סבב נוסף במשחק
+    string boardMsg = "";
+    bool showBoard = false; // נרצה שיראו את הלוח רק במידה ויש לפחות קטגוריה אחת עם תוכן
+    
     // ── מחיקת קטגוריה ── //
     bool showDeleteCategoryPopup = false;
     CategoryToSave categoryToDelete = null;
@@ -428,6 +452,7 @@ else
         {
             EnsureMinItems(cat);
         }
+        CalcStats(); 
     }
 
     async Task ConfirmPublish()
@@ -733,6 +758,36 @@ else
         contentChanged = true;;
         contentMsg = "";
     }
+    
+    void CalcStats()
+    {
+        // איפוס משתנים
+        totalItems = 0;
+        showBoard = false;
+
+        foreach (CategoryToSave cat in categories)
+        {
+            if (!string.IsNullOrWhiteSpace(cat.Content)) // בדיקה שיש תוכן בלפחות קטגוריה אחת
+                showBoard = true;
+
+            if (cat.Items != null) // ספרית כל הפריטים
+            {
+                foreach (ItemToSave item in cat.Items)
+                {
+                    if (!string.IsNullOrWhiteSpace(item.Content))
+                        totalItems++;
+                }
+            }
+        }
+
+        rounds = totalItems / 9; // כל סבב במשחק מורכב מכמות הפריטים בסה״כ חלקי 9 ועיגול כלפי מטה
+        // חקירה עצמית: חלוקה של int בint תחזיר תמיד תוצאה מעוגלת כלפי מטה
+
+        if (totalItems % 9 != 0)
+            missingItems = 9 - (totalItems % 9);
+        else
+            missingItems = 0;
+    }
 
     // ── שמירת תוכן ── //
     async Task SaveContent()
@@ -777,6 +832,7 @@ else
             // טעינה מחדש מהשרת כדי לקבל IDים מעודכנים
             await LoadGameContent();
             await UpdateCanPublishStatus();; // אולי מצב הפרסום השתנה - צריך לבדוק
+            CalcStats(); // חישוב מספר הפריטים לתצוגה של הלוח
 
         }
         else
