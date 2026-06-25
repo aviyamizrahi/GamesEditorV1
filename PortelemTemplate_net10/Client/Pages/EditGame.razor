@@ -294,8 +294,8 @@ else
     }
     else
     {
-        <p>לקטגוריה זו קיימים @categoryToDeleteItemsCount פריטים,</p>
-        <p>האם למחוק בכל זאת?</p>
+        <span>לקטגוריה זו קיימים @categoryToDeleteItemsCount פריטים,</span><br/>
+        <span>האם למחוק בכל זאת?</span>
     }
 </PopUp>
 
@@ -306,8 +306,8 @@ else
        OnConfirm="SaveAndNavigate"
        OnCancel="NavigateWithoutSaving"
        OnClose="() => showUnsavedChangesPopup = false">
-    <p>לפני חזרה לעמוד המשחקים שלי,</p>
-    <p>האם לשמור את השינויים שבוצעו?</p>
+    <span>לפני חזרה לעמוד המשחקים שלי,</span><br/>
+    <span>האם לשמור את השינויים שבוצעו?</span>
 </PopUp>
 
 @code {
