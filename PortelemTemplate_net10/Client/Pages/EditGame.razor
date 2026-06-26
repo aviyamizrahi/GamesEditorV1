@@ -19,81 +19,129 @@
     }
 </style>
 
-<button @onclick="HandleBackNavigation">חזרה למשחקים שלי</button>
-@* הכפתור יהיה פעיל רק במידה ומשחק חדש נשמר ויש לו מספר id בבסיס הנתונים *@
+<div class="head-of-page">
+    @if (String.IsNullOrWhiteSpace(displayName))
+    {
+        <h1>עריכת משחק</h1>
+    }
+    else
+    {
+        <h1>עריכת משחק ״@displayName״</h1>
+    }
+    <div class="btns-wrapper">
+        @if (gameStatus.IsPublish)
+        {
+            <Button Variant="primary" Text="ביטול פרסום" OnClick="UnpublishGame"></Button>
+        }
+        else
+        {
+            <Tooltip Text="@(!gameStatus.CanPublish ? "המשחק לא עומד בתנאי הפרסום" : "")" MaxWidth="200">
+                <Button Variant="primary" Text="פרסום משחק" OnClick="() => showPublishPopup = true"
+                        Disabled="@(!gameStatus.CanPublish || contentChanged || canSave)">
+                </Button>
+            </Tooltip>
+        }
 
-@if (gameStatus.IsPublish)
-{
-    <button @onclick="UnpublishGame">ביטול פרסום</button>
-}
-else
-{
-    <button disabled="@(!gameStatus.CanPublish || contentChanged || canSave)"
-            title="@(!gameStatus.CanPublish ? "המשחק לא עומד בתנאי הפרסום" : "")"
-            @onclick="() => showPublishPopup = true">
-        פרסום משחק
-    </button>
-}
+        <Button Variant="secondery" Text="חזרה למשחקים שלי" OnClick="HandleBackNavigation"></Button>
+        @* הכפתור יהיה פעיל רק במידה ומשחק חדש נשמר ויש לו מספר id בבסיס הנתונים *@
 
+    </div>
+</div>
 
-@if (String.IsNullOrWhiteSpace(displayName))
-{
-    <h1>עריכת משחק</h1>
-}
-else
-{
-    <h1>עריכת משחק ״@displayName״</h1>
-}
 
 @* ──────────────── הגדרות משחק ───────────────── *@
 
-<AccordionSection Title="עריכת הגדרות משחק" IsOpen="@isSettingsOpen" UnsavedChanges="@canSave">
-    <EditForm Model="gameToEdit" OnValidSubmit="SaveGameSettings">
-        <DataAnnotationsValidator />
-        <div>
-            <label>שם משחק:
-                <CustomInputText @bind-Value="gameToEdit.GameName"
-                                 placeholder="שם משחק..."
-                                 minLength="1"
-                                 maxLength="20"
-                                 @bind-Value:after="CheckCanSave" />
-            </label>
+<AccordionSection Title="הגדרות כלליות" IsOpen="@isSettingsOpen" UnsavedChanges="@canSave">
+    <HeaderButtons>
+        <div class="btns-wrapper">
+            <Button Type="submit"
+                    Text="שמירה"
+                    Variant="primary"
+                    Form="settings-form"
+                    Disabled="@(!canSave)"/>
+            <Button Text="ביטול שינויים"
+                    Variant="secondery"
+                    Disabled="@(!canSave || gameToEdit.ID == 0)"
+                    OnClick="CancelChanges"/>
         </div>
-        <br />
-        <div>
-            <label>זמן למיון פריט בכל תור</label>
-            <InputNumber @bind-Value="gameToEdit.RoundTime"
-                         step="5"
-                         min="20"
-                         max="60"
-                         disabled="@noLimit"
-                         @bind-Value:after="CheckCanSave" />
-            <b> או </b>
-            <label>
-                <InputCheckbox @bind-Value="noLimit" @bind-Value:after="OnNoLimitAndCheckSave" />
-                ללא הגבלה
-            </label>
-        </div>
-        <br />
-        <div>
-            <label>הנחיות העורך:
-                <CustomInputTextArea @bind-Value="gameToEdit.Instructions"
-                                     placeholder="כתבו הנחיה משלכם"
-                                     minLength="1"
-                                     maxLength="40"
-                                     @bind-Value:after="CheckCanSave" />
-            </label>
-        </div>
-        <ValidationMessage For="@(() => gameToEdit.GameName)" />
-        <br />
-        <input type="submit" value="שמירה" disabled="@(!context.Validate() || !canSave)" />
-        <input type="button" value="ביטול שינויים" disabled="@(!canSave || gameToEdit.ID == 0)" @onclick="CancelChanges" />
-        @* ביטול שינויים פעיל במידה ונעשו שינויים מהמשחק המקורי, ביצירת משחק חדש ביטול שינויים פעיל רק בשינוי אחרי שמירה ראשונה *@
-    </EditForm>
+        
+    </HeaderButtons>
+    <ChildContent>
+        <div class="settings-content">
+            <EditForm Model="gameToEdit" OnValidSubmit="SaveGameSettings" id="settings-form">
+                <DataAnnotationsValidator/>
+                <div class="settings-right">
+                    <div>
+                        <label>
+                            <span class="input-name">שם המשחק:</span>
+                            <CustomInputText @bind-Value="gameToEdit.GameName"
+                                             placeholder="שם משחק..."
+                                             minLength="1"
+                                             maxLength="30"
+                                             @bind-Value:after="CheckCanSave"/>
+                        </label>
+                    </div>
+                    <br/>
+                    <div>
+                        @* לא ניתן היה לשלוט בחיצים של תיבת מספר רגילה לכן בנינו כפתורים שמדמים את החיצים והסרנו את החיצים מהתיבת מספר *@
+                        <label class="input-name">זמן למיון פריט בכל תור</label>
+                        <div class="time-section-wrapper">
+                            <div class="number-input-wrapper @(noLimit ? "disabled" : "")">
+                                <div class="number-arrows">
+                                    <button type="button"
+                                            @onclick="() => { if (gameToEdit.RoundTime < 60) { gameToEdit.RoundTime += 5; CheckCanSave(); } }"
+                                            disabled="@(gameToEdit.RoundTime >= 60 || noLimit)">
+                                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M7 14L12 9L17 14" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </button>
+                                    <button type="button"
+                                            @onclick="() => { if (gameToEdit.RoundTime > 20) { gameToEdit.RoundTime -= 5; CheckCanSave(); } }"
+                                            disabled="@(gameToEdit.RoundTime <= 20 || noLimit)">
+                                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M7 10L12 15L17 10" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <InputNumber @bind-Value="gameToEdit.RoundTime"
+                                             step="5"
+                                             min="20"
+                                             max="60"
+                                             disabled="@noLimit"
+                                             @bind-Value:after="CheckCanSave"/>
+                            </div>
+                            <b> או </b>
+                            <label>
+                                <InputCheckbox class="settings-checkbox" @bind-Value="noLimit" @bind-Value:after="OnNoLimitAndCheckSave"/>
+                                ללא הגבלה
+                            </label>
+                        </div>
 
-    <br />
-    <p>@msg</p>
+                    </div>
+                    <br/>
+                </div>
+                
+                <div class="settings-left">
+                    <div>
+                        <label>
+                            <span class="input-name">הנחיות העורך:</span>
+                            <CustomInputTextArea @bind-Value="gameToEdit.Instructions"
+                                                 placeholder="כתבו הנחיה משלכם"
+                                                 minLength="1"
+                                                 maxLength="30"
+                                                 @bind-Value:after="CheckCanSave"/>
+                        </label>
+                    </div>
+                    <ValidationMessage For="@(() => gameToEdit.GameName)"/>
+                    <ValidationMessage For="@(() => gameToEdit.Instructions)"/>
+                    <p class="msg settings-msg">@msg</p>
+                </div>
+            </EditForm>
+        </div>
+        
+    </ChildContent>
 </AccordionSection>
+
 
 @* ───────────── עריכת התוכן ───────────────── *@
 

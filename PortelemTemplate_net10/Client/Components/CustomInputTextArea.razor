@@ -1,39 +1,75 @@
 @inherits Microsoft.AspNetCore.Components.Forms.InputTextArea
 
-<span>@length.ToString()/@maxLength.ToString()</span> <br/>
-<textarea @attributes="@AdditionalAttributes" class="@CssClass default-input @inputClass" @bind="@CurrentValueAsString"  @bind:event="oninput" @onkeyup="countChars" maxlength="@maxLength"></textarea>
+<style>
+    .input-wrapper {
+        position: relative;
+    }
+    .input {
+        border: 1px solid black;
+        padding: 6px 10px;
+        font-family: "Open Sans";
+        font-size: 16px;
+        outline: none;
+        width: 250px;
+        resize: vertical;
+    }
+    .input.danger {
+        border: 1.5px solid #FF1111;
+    }
+    .char-count {
+        color: #507AAF;
+        font-size: 14px;
+        font-weight: bold;
+        position: absolute;
+        top: -22px;
+        left: 0;
+        margin-bottom: 8px;
+    }
+    .char-count.danger {
+        color: #FF1111;
+        font-size: 14px;
+        font-weight: bold;
+    }
+</style>
+
+<div class="input-wrapper">
+    @if (length > 0)
+    {
+        <span class="char-count @(inputClass == "danger" ? "danger" : "")">
+            @length.ToString()/@maxLength.ToString()
+        </span>
+    }
+    <textarea @attributes="@AdditionalAttributes"
+              class="input @inputClass"
+              @bind="@CurrentValueAsString"
+              @bind:event="oninput"
+              @onkeyup="countChars"
+              maxlength="@maxLength"></textarea>
+</div>
 
 @code {
     // פרמטר לקבלת אורך מחרוזת מינימלי
-    [Parameter]
-    public int minLength { get; set; } = 1;
-    
+    [Parameter] public int minLength { get; set; } = 1;
     // פרמטר לקבלת אורך מחרוזת מקסימלי
-    [Parameter]
-    public int maxLength { get; set; } = 15;
+    [Parameter] public int maxLength { get; set; } = 15;
     // משתנה שיכיל את שם המחלקה הרלוונטי במידה ואורך המחרוזת תקין, דורש אזהרה או לא תקין
     string inputClass = "";
     // משתנה שיכיל את אורך המחרוזת
     int length = 0;
-    
-    
+
     void countChars()
     {
         if (CurrentValueAsString != null)
         {
             length = CurrentValueAsString.Length;
-        
+
             if (length >= minLength)
-            {
-                inputClass = "good-input";
-            }
+                inputClass = "good";
             else
-            {
-                inputClass = "danger-input";
-            }
+                inputClass = "danger";
         }
     }
-    
+
     protected override void OnParametersSet()
         // הפונקציה הזאת תקרה בזמן שיש מידע שמגיע משרת
     {
@@ -42,9 +78,9 @@
             length = CurrentValueAsString.Length;
 
             if (length >= minLength)
-                inputClass = "good-input";
+                inputClass = "good";
             else
-                inputClass = "danger-input";
+                inputClass = "danger";
         }
     }
 }

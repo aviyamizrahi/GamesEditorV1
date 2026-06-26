@@ -1,0 +1,163 @@
+.head-of-page[b-2lh46oy4mw] {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.head-of-page h1[b-2lh46oy4mw] {
+    font-size: 30px;
+}
+
+.btns-wrapper[b-2lh46oy4mw] {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 0;
+}
+/* הגדרות משחק - עיצוב כמו באפיון */
+
+[b-2lh46oy4mw] #settings-form {
+    display: flex;
+    gap: 40px;
+    padding: 20px;
+    direction: rtl;
+}
+
+.settings-right[b-2lh46oy4mw] {
+    flex: 1;
+}
+
+.settings-left[b-2lh46oy4mw] {
+    flex: 1;
+}
+
+#settings-form .input-name[b-2lh46oy4mw] {
+    font-size: 18px;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.number-input-wrapper[b-2lh46oy4mw] {
+    display: inline-flex;
+    align-items: stretch;
+    border: 1px solid #000000;
+    background-color: #ffffff;
+    box-sizing: border-box;
+    width: 92px !important;  /* רוחב מדויק  */
+    height: 42px !important; /* גובה מדויק  */
+    overflow: hidden;
+}
+
+.number-input-wrapper.disabled[b-2lh46oy4mw] {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* עיצוב תיבת המספר - מכריחים אותה להיות בצד שמאל */
+.number-input-wrapper[b-2lh46oy4mw]  input {
+    order: 2; 
+    border: none !important;
+    outline: none !important;
+    padding: 0 5px;
+    font-size: 18px;
+    text-align: center;
+    width: 64px; /* 92px פחות 24px של החצים פחות הגבולות */
+    height: 100%;
+    background: transparent;
+    box-sizing: border-box;
+}
+
+/* העלמת חצי הדיפולט */
+.number-input-wrapper[b-2lh46oy4mw]  input::-webkit-outer-spin-button,
+.number-input-wrapper[b-2lh46oy4mw]  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.number-input-wrapper[b-2lh46oy4mw]  input[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* קונטיינר החצים - מכריחים אותו להיות בצד ימין */
+.number-arrows[b-2lh46oy4mw] {
+    order: 1; /* מבטיח שהחצים תמיד יהיו מימין */
+    display: flex;
+    flex-direction: column;
+    width: 24px;
+    height: 100%;
+    border-left: 1px solid #000000; /* קו מפריד אנכי */
+    box-sizing: border-box;
+}
+
+/* כפתורי החצים - חלוקה שווה בדיוק בגובה */
+.number-arrows button[b-2lh46oy4mw] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 50%; /* כל כפתור תופס בדיוק חצי מהגובה */
+    width: 100%;
+    background: #ffffff;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+/* קו מפריד אופקי עדין בין החץ העליון לתחתון */
+.number-arrows button:first-child[b-2lh46oy4mw] {
+    border-bottom: 1px solid #000000;
+}
+
+/* שליטה על גודל החץ בתוך הכפתור */
+.number-arrows button svg[b-2lh46oy4mw] {
+    width: 16px; /* גודל האייקון עצמו בתוך הריבוע */
+    height: 16px;
+    display: block;
+}
+
+.number-arrows button:active[b-2lh46oy4mw] {
+    background-color: #f5f5f5;
+}
+
+.number-arrows button:disabled[b-2lh46oy4mw] {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+[b-2lh46oy4mw] .settings-checkbox {
+    appearance: none ;
+    -webkit-appearance: none ;
+    width: 26px ;
+    height: 26px;
+    border: 1px solid black;
+    background-color: white;
+    cursor: pointer;
+    display: inline-block 
+}
+
+[b-2lh46oy4mw] .settings-checkbox:checked {
+    background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6.15021 16C5.66765 16 5.31756 15.8062 4.9864 15.3992L0.350089 9.50697C0.10408 9.19685 0 8.91581 0 8.61538C0 7.91763 0.501478 7.42338 1.19219 7.42338C1.60852 7.42338 1.90183 7.57844 2.17623 7.9467L6.11236 13.083L13.7765 0.629921C14.0698 0.164749 14.3536 0 14.8267 0C15.508 0 16 0.484555 16 1.17262C16 1.43428 15.9148 1.71532 15.7161 2.02544L7.31402 15.3701C7.04908 15.7868 6.65169 16 6.15021 16Z' fill='black'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    background-color: white !important;
+}
+
+.time-section-wrapper[b-2lh46oy4mw] {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.time-section-wrapper label[b-2lh46oy4mw] {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.settings-msg[b-2lh46oy4mw] {
+    color: black !important;
+}
+
+
+

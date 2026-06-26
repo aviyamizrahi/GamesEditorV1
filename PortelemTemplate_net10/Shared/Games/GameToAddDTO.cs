@@ -6,12 +6,12 @@ public class GameToAddDTO
 {
     public int ID { get; set; }
     
-    [Required(ErrorMessage = "שדה חובה")]
+    [Required(ErrorMessage = "נא להזין שם משחק")]
     [RegularExpression(@".*\S.*", ErrorMessage = "השדה לא יכול להכיל רק רווחים")]
     // חקירה עצמית על בדיקת תווים ריקים
     [StringLength(40, MinimumLength = 1, ErrorMessage = "יש להזין בין 1 ל-40 תווים")]
     public string GameName { get; set; }
-
+    [Required(ErrorMessage = "נא להזין הנחיה")]
     [MinLength(1, ErrorMessage = "יש להזין לפחות תו אחד")]
     [StringLength(40, ErrorMessage = "יש להזין עד 40 תווים")]
     public string Instructions { get; set; } = "מיינו את המכתב לקופסה הנכונה";

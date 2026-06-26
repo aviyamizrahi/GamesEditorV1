@@ -13,7 +13,8 @@
         background-color: white;
         color: #333;
         padding: 4px 8px;
-        border-radius: 8px;
+        margin: 5px 0;
+        border-radius: 6px;
         font-size: 0.85rem;
         border:  1.8px solid black;
         white-space: normal;
@@ -33,7 +34,7 @@
     @ChildContent 
     @if (!string.IsNullOrEmpty(Text)) 
     {
-        <div class="tooltip-box" style="max-width: @(MaxWidth)px;">@((MarkupString)Text)</div>
+        <div class="tooltip-box" style="max-width: @(MaxWidth)px; margin-top: @(MarginTop)px">@((MarkupString)Text)</div>
         // מתייחס לטקסט כhtml ולא טקסט רגיל
     }
 </div>
@@ -42,4 +43,5 @@
     [Parameter] public RenderFragment ChildContent { get; set; }
     [Parameter] public string Text { get; set; }
     [Parameter] public int MaxWidth { get; set; } = 120; // ברירת מחדל של רוחב 120 פיקסלים
+    [Parameter] public int MarginTop { get; set; } = 0; // שימוש במקומות ספציפיים לפי הצורך
 }

@@ -12,7 +12,6 @@
         border: 2px solid #911627;
         border-radius: 6px;
         padding: 2px;
-        margin-top: 16px;
         cursor: pointer;
         transition: background-color 0.2s;
         display: flex;
@@ -51,8 +50,7 @@
         background-color: #FAF9F9;
         border: 2px solid #911627;
         border-radius: 6px;
-        padding: 2px 8px;
-        margin-top: 16px;
+        padding: 3.6px 8px;
         cursor: pointer;
         transition: background-color 0.2s;
         display: flex;
@@ -88,7 +86,7 @@
 @* מטרת הקומפוננטה: *@
 @* כפתור ראשי או משני, תלוי באפיון *@
 
-<button class="btn @(Variant == "primary" ? "primary-btn" : "secondary-btn") @(Disabled ? "btn-disabled" : "")"
+<button  type="@Type" form="@Form" class="btn @(Variant == "primary" ? "primary-btn" : "secondary-btn") @(Disabled ? "btn-disabled" : "")"
         disabled="@Disabled"
         @onclick="OnClick">
     <span class="text-wrap">
@@ -103,4 +101,7 @@
     [Parameter] public string Text { get; set; }
     [Parameter] public EventCallback OnClick { get; set; }
     [Parameter] public bool Disabled { get; set; } = false;
+    [Parameter] public string Type { get; set; } = "button"; // רלוונטי למקרה בו כפתור ״שמירה״ הוא מסוג submit ונצטרך לשנות
+    [Parameter] public string Form { get; set; } = ""; // רלוונטי למקרה בו כפתור ״שמירה״ הוא מסוג submit ונצטרך לשנות
+
 }
