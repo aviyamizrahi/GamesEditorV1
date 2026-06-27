@@ -1,0 +1,418 @@
+@using AuthTemplate.Shared.EditGameContentDTOs
+
+@* קומפוננטת קרטון קטגוריה *@
+
+<style>
+    .category-card-wrapper {
+        position: relative;
+        margin: 25px;
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        width: 156px; /* מותאם לרוחב המקסימלי של הקופסה הגדולה כדי שלא יקפוץ הצידה */
+        height: 145px; /* נותן מספיק מקום קבוע לקופסה + לרדיו בטונס למטה */
+        box-sizing: border-box;
+    }
+
+    .category-box {
+        position: relative;
+        cursor: pointer;
+        height: 116px; /* גובה מקסימלי קבוע של הקופסה */
+        display: flex;
+        align-items: flex-end; /* מבטיח שהקופסאות יושבות על אותו קו תחתון */
+        justify-content: center;
+        width: 100%;
+    }
+
+    /* כפתור הפח — ממוקם בפינה הימנית העליונה של הקופסה */
+    /* כפתור הפח — ממוקם מחוץ לקופסה בצד שמאל */
+    .delete-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: none;
+        background: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #000000;
+        padding: 0;
+        opacity: 0;  /* ברירת מחדל: הפח שקוף ולא ניתן ללחוץ עליו */
+        pointer-events: none;
+        transition: opacity 0.15s ease-in-out, background-color 0.15s ease-in-out;
+    }
+
+    .category-card-wrapper .tooltip-wrapper {
+        position: absolute;
+        top: 50%;
+        right: 150px;
+        transform: translateY(-50%);
+        z-index: 30;
+    }
+
+    .category-card-wrapper .tooltip-wrapper .tooltip-box {
+        margin-top: 20px !important; 
+    }
+
+    .category-card-wrapper:has(.selected) .tooltip-wrapper {
+        right: 163px; /* קצת יותר שמאל כשהקרטון גדול */
+    }
+
+    /* 🎯 חוק הובר: מציגים את הפח רק בריחוף על הקטגוריה, ורק אם מותר למחוק (CanDelete) */
+    .category-card-wrapper:hover .delete-btn:not(:disabled) {
+        opacity: 1;
+        pointer-events: auto; /* מאפשר ללחוץ עליו */
+    }
+
+
+    /* אם ניתן ללחוץ על הפח אז מציג צבע מלא*/
+    .category-card-wrapper:hover .delete-btn:not(:disabled) {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* hoverאם לא ניתן ללחוץ על הפח אז מציג את הפח בשקיפות */
+    .category-card-wrapper:hover .delete-btn:disabled {
+        opacity: 0.3 !important;
+        pointer-events: none !important;
+        cursor: not-allowed;
+    }
+
+    /* צבע אדום לפח עצמו רק בזמן שמרחפים מעליו */
+    .delete-btn:hover:not(:disabled) {
+        
+    }
+    
+
+    
+
+    /* ה-SVG של הקופסה */
+    .box-svg {
+        display: block;
+    }
+
+    /* התוכן (טקסט/תמונה) ממוקם מעל ה-SVG */
+    .box-content {
+        position: absolute;
+        bottom: 8px; /* מעוגן יחסית לתחתית הקופסה כדי שלא יקפוץ בין מצבים */
+        left: 50%;
+        transform: translateX(-50%);
+        width: 70%;
+        height: 65px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 5;
+    }
+
+    /* תמונה בתוך הקופסה */
+    .box-image {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+
+    /* כפתור X למחיקת תמונה */
+    .remove-image-btn {
+        position: absolute;
+        top: -8px;
+        left: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+        z-index: 10;
+    }
+
+    /* כפתור העלאת תמונה */
+    .upload-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: black;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .upload-btn span {
+        font-size: 10px;
+        text-align: center;
+        color: black;
+    }
+
+    /* רדיו בטונס מתחת לקופסה */
+    .cat-type-radios {
+        display: flex;
+        gap: 12px;
+        direction: ltr;
+        margin-top: 8px; /* רווח קבוע ונקי מתחת לקופסה */
+        height: 20px;
+        z-index: 20; /* השכבה הכי עליונה כדי שיהיה אפשר להקליק חופשי */
+        opacity: 0;
+        pointer-events: none; /* מונע אינטראקציה כשהם נסתרים */
+        transition: opacity 0.15s ease-in-out;
+    }
+
+    /* הצגה חלקה ב-Hover */
+    .category-card-wrapper:hover .cat-type-radios {
+        opacity: 1;
+        pointer-events: auto; /* מחזיר את אפשרות ההקשבה להקלקות */
+    }
+    
+    .radio-label {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    .radio-label input {
+        cursor: pointer;
+    }
+
+    /* שכבת הכיסוי האדומה בזמן hover על הפח */
+    .category-box::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 128, 128, 0.7); 
+        border-radius: 4px;
+        z-index: 4; 
+        opacity: 0;
+        pointer-events: none; /* מונע מהשכבה להפריע להקלקות */
+        transition: opacity 0.15s ease-in-out;
+    }
+
+    
+</style>
+
+<div class="category-card-wrapper" @key="Cat">
+    <Tooltip Text="מחיקת קטגוריה" MaxWidth="112" MarginTop="30">
+        <button class="delete-btn @(isTrashHovered ? "delete-btn-danger" : "")"
+                type="button"
+                @onclick="OnDelete"
+                @onclick:stopPropagation="true"
+                disabled="@(!CanDelete)"
+                @onmouseenter="() => isTrashHovered = true"
+                @onmouseleave="() => isTrashHovered = false">
+            @* אייקון פח *@
+            <svg width="20" height="22" viewBox="0 0 16 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4.20868 18C3.05766 18 2.28446 17.2618 2.22295 16.1545L1.63427 4.22318H0.562328C0.263591 4.22318 0 3.97425 0 3.66524C0 3.36481 0.263591 3.1073 0.562328 3.1073H4.39319V1.83691C4.39319 0.695279 5.14882 0 6.39649 0H9.58594C10.8336 0 11.5892 0.695279 11.5892 1.83691V3.1073H15.4377C15.7452 3.1073 16 3.35622 16 3.66524C16 3.96567 15.7452 4.22318 15.4377 4.22318H14.3657L13.777 16.1459C13.7155 17.2618 12.9336 18 11.7913 18H4.20868ZM5.59692 1.90558V3.1073H10.3943V1.90558C10.3943 1.41631 10.0516 1.09871 9.51565 1.09871H6.46678C5.93959 1.09871 5.59692 1.41631 5.59692 1.90558ZM4.31411 16.8841H11.6771C12.1867 16.8841 12.5645 16.5236 12.5821 16.0258L13.1532 4.22318H2.81164L3.40912 16.0258C3.43548 16.515 3.82208 16.8841 4.31411 16.8841ZM5.52663 15.4249C5.25426 15.4249 5.06096 15.2532 5.05217 14.9871L4.79736 6.18884C4.78858 5.92275 4.98188 5.75107 5.27183 5.75107C5.53542 5.75107 5.73751 5.92275 5.74629 6.18884L6.0011 14.9871C6.00988 15.2446 5.81658 15.4249 5.52663 15.4249ZM8.00439 15.4249C7.71444 15.4249 7.51236 15.2446 7.51236 14.9871V6.18884C7.51236 5.93133 7.71444 5.75107 8.00439 5.75107C8.29434 5.75107 8.48764 5.93133 8.48764 6.18884V14.9871C8.48764 15.2446 8.29434 15.4249 8.00439 15.4249ZM10.4734 15.4335C10.1746 15.4335 9.99012 15.2446 9.9989 14.9871L10.2537 6.18884C10.2625 5.92275 10.4646 5.75107 10.7282 5.75107C11.0181 5.75107 11.2114 5.93133 11.2026 6.19743L10.9478 14.9871C10.939 15.2532 10.7457 15.4335 10.4734 15.4335Z" fill="black"/>
+            </svg>
+        </button>
+    </Tooltip>
+    @* עטיפת ה-SVG עם הכיתוב/תמונה בתוכה *@
+    <div class="category-box @(IsSelected ? "selected" : "")" @onclick="OnSelect">
+        
+        @* SVG קופסת קרטון *@
+        @if (IsSelected)
+        { 
+            <svg width="156" height="116" viewBox="0 0 156 116" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M140.995 0.25L155.542 22.9502H0.479492L16.3398 0.25H140.995Z" fill="#E5AC77" stroke="black" stroke-width="0.5"/>
+                <path d="M116.228 9.90088L116.375 10.0513L117.157 10.8511L117.987 11.7007H37.9062L38.8633 10.8306L39.7422 10.0308L39.8857 9.90088H116.228Z" fill="black" stroke="black"/>
+                <mask id="path-3-inside-1_84_18997" fill="white">
+                    <path d="M0 23.2002H156V116H0V23.2002Z"/>
+                </mask>
+                <path d="M0 23.2002H156V116H0V23.2002Z" fill="#E5AC77"/>
+                <path d="M156 116V116.5H156.5V116H156ZM0 116H-0.5V116.5H0V116ZM156 23.2002H155.5V116H156H156.5V23.2002H156ZM156 116V115.5H0V116V116.5H156V116ZM0 116H0.5V23.2002H0H-0.5V116H0Z" fill="black" mask="url(#path-3-inside-1_84_18997)"/>
+                <rect x="14.6406" y="32.9316" width="125.702" height="72.834" fill="white" stroke="#808080" stroke-width="4"/>
+                <g filter="url(#filter0_n_84_18997)">
+                    <rect x="27.3633" y="29.5781" width="24.7315" height="4.06495" transform="rotate(135 27.3633 29.5781)" fill="#EAEAEA"/>
+                </g>
+                <g filter="url(#filter1_n_84_18997)">
+                    <rect width="24.7315" height="4.06495" transform="matrix(0.707107 0.707107 0.707107 -0.707107 127.537 28.874)" fill="#EAEAEA"/>
+                </g>
+                <defs>
+                    <filter id="filter0_n_84_18997" x="7.00195" y="26.7036" width="20.3613" height="20.3623" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                        <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+                        <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+                        <feTurbulence type="fractalNoise" baseFrequency="2 2" stitchTiles="stitch" numOctaves="3" result="noise" seed="4861"/>
+                        <feColorMatrix in="noise" type="luminanceToAlpha" result="alphaNoise"/>
+                        <feComponentTransfer in="alphaNoise" result="coloredNoise1">
+                            <feFuncA type="discrete" tableValues="1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "/>
+                        </feComponentTransfer>
+                        <feComposite operator="in" in2="shape" in="coloredNoise1" result="noise1Clipped"/>
+                        <feFlood flood-color="rgba(0, 0, 0, 0.25)" result="color1Flood"/>
+                        <feComposite operator="in" in2="noise1Clipped" in="color1Flood" result="color1"/>
+                        <feMerge result="effect1_noise_84_18997">
+                            <feMergeNode in="shape"/>
+                            <feMergeNode in="color1"/>
+                        </feMerge>
+                    </filter>
+                    <filter id="filter1_n_84_18997" x="127.537" y="25.9995" width="20.3613" height="20.3623" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                        <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+                        <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+                        <feTurbulence type="fractalNoise" baseFrequency="2 2" stitchTiles="stitch" numOctaves="3" result="noise" seed="4861"/>
+                        <feColorMatrix in="noise" type="luminanceToAlpha" result="alphaNoise"/>
+                        <feComponentTransfer in="alphaNoise" result="coloredNoise1">
+                            <feFuncA type="discrete" tableValues="1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "/>
+                        </feComponentTransfer>
+                        <feComposite operator="in" in2="shape" in="coloredNoise1" result="noise1Clipped"/>
+                        <feFlood flood-color="rgba(0, 0, 0, 0.25)" result="color1Flood"/>
+                        <feComposite operator="in" in2="noise1Clipped" in="color1Flood" result="color1"/>
+                        <feMerge result="effect1_noise_84_18997">
+                            <feMergeNode in="shape"/>
+                            <feMergeNode in="color1"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+            </svg>
+
+            
+        }
+        else
+        { 
+            <svg width="137" height="102" viewBox="0 0 137 102" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M123.806 0.25L136.542 20.124H0.480469L14.3662 0.25H123.806Z" fill="#E5AC77" stroke="black" stroke-width="0.5"/>
+                <path d="M102.099 8.63379L102.245 8.78418L102.932 9.4873L103.763 10.3359H33.1328L34.0898 9.4668L34.8623 8.76367L35.0049 8.63379H102.099Z" fill="black" stroke="black"/>
+                <mask id="path-3-inside-1_84_19006" fill="white">
+                    <path d="M0 20.3745H137V101.872H0V20.3745Z"/>
+                </mask>
+                <path d="M0 20.3745H137V101.872H0V20.3745Z" fill="#E5AC77"/>
+                <path d="M137 101.872V102.372H137.5V101.872H137ZM0 101.872H-0.5V102.372H0V101.872ZM137 20.3745H136.5V101.872H137H137.5V20.3745H137ZM137 101.872V101.372H0V101.872V102.372H137V101.872ZM0 101.872H0.5V20.3745H0H-0.5V101.872H0Z" fill="black" mask="url(#path-3-inside-1_84_19006)"/>
+                <rect x="11.2754" y="27.5181" width="113.905" height="67.4761" fill="white"/>
+                <g filter="url(#filter0_n_84_19006)">
+                    <rect x="24.2051" y="26.3291" width="21.7193" height="3.56986" transform="rotate(135 24.2051 26.3291)" fill="#EAEAEA"/>
+                </g>
+                <g filter="url(#filter1_n_84_19006)">
+<rect width="21.7193" height="3.56986" transform="matrix(0.707107 0.707107 0.707107 -0.707107 112.18 25.7109)" fill="#EAEAEA"/>
+</g>
+<defs>
+<filter id="filter0_n_84_19006" x="6.32227" y="23.8047" width="17.8828" height="17.8823" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feTurbulence type="fractalNoise" baseFrequency="2 2" stitchTiles="stitch" numOctaves="3" result="noise" seed="4861" />
+<feColorMatrix in="noise" type="luminanceToAlpha" result="alphaNoise" />
+<feComponentTransfer in="alphaNoise" result="coloredNoise1">
+<feFuncA type="discrete" tableValues="1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "/>
+</feComponentTransfer>
+<feComposite operator="in" in2="shape" in="coloredNoise1" result="noise1Clipped" />
+<feFlood flood-color="rgba(0, 0, 0, 0.25)" result="color1Flood" />
+<feComposite operator="in" in2="noise1Clipped" in="color1Flood" result="color1" />
+<feMerge result="effect1_noise_84_19006">
+<feMergeNode in="shape" />
+<feMergeNode in="color1" />
+</feMerge>
+</filter>
+<filter id="filter1_n_84_19006" x="112.18" y="23.1865" width="17.8828" height="17.8823" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feTurbulence type="fractalNoise" baseFrequency="2 2" stitchTiles="stitch" numOctaves="3" result="noise" seed="4861" />
+<feColorMatrix in="noise" type="luminanceToAlpha" result="alphaNoise" />
+<feComponentTransfer in="alphaNoise" result="coloredNoise1">
+<feFuncA type="discrete" tableValues="1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "/>
+</feComponentTransfer>
+<feComposite operator="in" in2="shape" in="coloredNoise1" result="noise1Clipped" />
+<feFlood flood-color="rgba(0, 0, 0, 0.25)" result="color1Flood" />
+<feComposite operator="in" in2="noise1Clipped" in="color1Flood" result="color1" />
+<feMerge result="effect1_noise_84_19006">
+<feMergeNode in="shape" />
+<feMergeNode in="color1" />
+</feMerge>
+</filter>
+</defs>
+</svg>
+
+
+
+        }
+
+        @* תוכן הקופסה — טקסט או תמונה *@
+        <div class="box-content">
+            @if (Cat.IsImage)
+            {
+                @if (!string.IsNullOrWhiteSpace(Cat.Content))
+                {
+                    <img src="uploadedFiles/@Cat.Content" alt="קטגוריה" class="box-image"/>
+                    <span class="remove-image-btn" @onclick="OnImageDelete" @onclick:stopPropagation="true">
+                        <svg width="14" height="14" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5 10C4.30824 10 3.66056 9.86945 3.05697 9.60834C2.45676 9.35063 1.92608 8.99118 1.4649 8.53001C1.00712 8.07223 0.647677 7.54323 0.386572 6.94303C0.128857 6.33944 0 5.69176 0 5C0 4.30824 0.128857 3.66056 0.386572 3.05697C0.647677 2.45337 1.00712 1.92269 1.4649 1.4649C1.92608 1.00712 2.45676 0.649373 3.05697 0.391658C3.66056 0.130553 4.30824 0 5 0C5.69176 0 6.33944 0.130553 6.94303 0.391658C7.54663 0.649373 8.07731 1.00712 8.5351 1.4649C8.99288 1.92269 9.35063 2.45337 9.60834 3.05697C9.86945 3.66056 10 4.30824 10 5C10 5.69176 9.86945 6.33944 9.60834 6.94303C9.35063 7.54323 8.99288 8.07223 8.5351 8.53001C8.07731 8.99118 7.54663 9.35063 6.94303 9.60834C6.33944 9.86945 5.69176 10 5 10ZM5 8.9471C5.54595 8.9471 6.05629 8.84368 6.53103 8.63683C7.00916 8.43337 7.42964 8.15192 7.79247 7.79247C8.15531 7.42964 8.43845 7.01085 8.64191 6.53611C8.84537 6.05799 8.9471 5.54595 8.9471 5C8.9471 4.45405 8.84537 3.94371 8.64191 3.46897C8.43845 2.99084 8.15531 2.57206 7.79247 2.21261C7.42964 1.84978 7.00916 1.56663 6.53103 1.36317C6.05629 1.15632 5.54595 1.0529 5 1.0529C4.45405 1.0529 3.94201 1.15632 3.46389 1.36317C2.98915 1.56663 2.57036 1.84978 2.20753 2.21261C1.84469 2.57206 1.56155 2.99084 1.35809 3.46897C1.15463 3.94371 1.0529 4.45405 1.0529 5C1.0529 5.54595 1.15463 6.05799 1.35809 6.53611C1.56155 7.01085 1.84469 7.42964 2.20753 7.79247C2.57036 8.15192 2.98915 8.43337 3.46389 8.63683C3.94201 8.84368 4.45405 8.9471 5 8.9471ZM3.60631 7.20244C3.47745 7.20244 3.37233 7.16345 3.29095 7.08545C3.20956 7.00407 3.16887 6.90573 3.16887 6.79044C3.16887 6.67854 3.20787 6.57002 3.28586 6.4649L4.39471 4.94914L3.34181 3.50966C3.25025 3.39437 3.20448 3.27908 3.20448 3.16378C3.20448 3.04171 3.24856 2.93998 3.33672 2.8586C3.42489 2.77382 3.5334 2.73143 3.66226 2.73143C3.76399 2.73143 3.84707 2.75178 3.9115 2.79247C3.97931 2.83316 4.04883 2.90777 4.12004 3.01628L5.01526 4.33876H5.04578L5.92065 3.01628C5.98847 2.91116 6.05459 2.83825 6.11902 2.79756C6.18684 2.75348 6.26823 2.73143 6.36317 2.73143C6.49203 2.73143 6.59885 2.77213 6.68362 2.85351C6.7684 2.9315 6.81078 3.02984 6.81078 3.14852C6.81078 3.26043 6.7684 3.37063 6.68362 3.47915L5.58494 4.96948L6.67854 6.44964C6.75992 6.55476 6.80061 6.66328 6.80061 6.77518C6.80061 6.90064 6.75822 7.00407 6.67345 7.08545C6.58867 7.16345 6.47847 7.20244 6.34283 7.20244C6.24449 7.20244 6.16311 7.1821 6.09868 7.1414C6.03425 7.09732 5.96473 7.01933 5.89013 6.90743L4.99491 5.59512H4.96439L4.059 6.90743C3.9844 7.01933 3.91489 7.09732 3.85046 7.1414C3.78603 7.1821 3.70465 7.20244 3.60631 7.20244Z" fill="black"/>
+                        </svg>
+                    </span>
+                }
+                else
+                {
+                    <label class="upload-btn" @onclick:stopPropagation="true">
+                        <svg width="31" height="23" viewBox="0 0 31 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3.39844 20.2617C2.26562 20.2617 1.41406 19.9805 0.84375 19.418C0.28125 18.8555 0 18.0195 0 16.9102V3.35156C0 2.23438 0.28125 1.39844 0.84375 0.84375C1.41406 0.28125 2.26562 0 3.39844 0H22.6641C23.7969 0 24.6445 0.28125 25.207 0.84375C25.7695 1.40625 26.0508 2.24219 26.0508 3.35156V9.84375C25.918 9.82812 25.7852 9.81641 25.6523 9.80859C25.5195 9.79297 25.3867 9.78516 25.2539 9.78516C25.1133 9.78516 24.9766 9.79297 24.8438 9.80859C24.7109 9.81641 24.5742 9.82812 24.4336 9.84375V3.43359C24.4336 2.83203 24.2773 2.37891 23.9648 2.07422C23.6523 1.76172 23.2109 1.60547 22.6406 1.60547H3.42188C2.84375 1.60547 2.39844 1.76172 2.08594 2.07422C1.78125 2.37891 1.62891 2.83203 1.62891 3.43359V15.9023L5.01562 12.8086C5.24219 12.5898 5.47266 12.4297 5.70703 12.3281C5.94141 12.2266 6.18359 12.1758 6.43359 12.1758C6.70703 12.1758 6.96484 12.2305 7.20703 12.3398C7.45703 12.4492 7.69922 12.6094 7.93359 12.8203L9.99609 14.6953L15.0234 10.207C15.2812 9.97266 15.5469 9.80469 15.8203 9.70312C16.1016 9.59375 16.3945 9.53906 16.6992 9.53906C17.0039 9.53906 17.2969 9.59766 17.5781 9.71484C17.8672 9.82422 18.1367 9.99609 18.3867 10.2305L20.2383 11.9531C19.6211 12.5781 19.1328 13.3086 18.7734 14.1445C18.4219 14.9727 18.2461 15.8555 18.2461 16.793C18.2461 17.4258 18.3281 18.0312 18.4922 18.6094C18.6562 19.1953 18.8867 19.7461 19.1836 20.2617H3.39844ZM8.21484 10.2539C7.73047 10.2539 7.28906 10.1367 6.89062 9.90234C6.5 9.66016 6.1875 9.34375 5.95312 8.95312C5.71875 8.55469 5.60156 8.11719 5.60156 7.64062C5.60156 7.16406 5.71875 6.73047 5.95312 6.33984C6.1875 5.94141 6.5 5.625 6.89062 5.39062C7.28906 5.14844 7.73047 5.02734 8.21484 5.02734C8.69141 5.02734 9.125 5.14844 9.51562 5.39062C9.91406 5.625 10.2305 5.94141 10.4648 6.33984C10.6992 6.73047 10.8164 7.16406 10.8164 7.64062C10.8164 8.11719 10.6992 8.55469 10.4648 8.95312C10.2305 9.34375 9.91406 9.66016 9.51562 9.90234C9.125 10.1367 8.69141 10.2539 8.21484 10.2539ZM25.2656 22.3828C24.4922 22.3828 23.7695 22.2383 23.0977 21.9492C22.4258 21.6602 21.832 21.2578 21.3164 20.7422C20.8008 20.2266 20.3984 19.6328 20.1094 18.9609C19.8203 18.2891 19.6758 17.5664 19.6758 16.793C19.6758 15.7773 19.9297 14.8477 20.4375 14.0039C20.9453 13.1602 21.6211 12.4844 22.4648 11.9766C23.3086 11.4688 24.2422 11.2148 25.2656 11.2148C26.2734 11.2148 27.1992 11.4688 28.043 11.9766C28.8945 12.4844 29.5703 13.1602 30.0703 14.0039C30.5781 14.8477 30.832 15.7773 30.832 16.793C30.832 17.5586 30.6836 18.2773 30.3867 18.9492C30.0977 19.6211 29.6953 20.2148 29.1797 20.7305C28.6641 21.2461 28.0703 21.6484 27.3984 21.9375C26.7266 22.2344 26.0156 22.3828 25.2656 22.3828ZM25.2656 20.3086C25.4609 20.3086 25.6172 20.25 25.7344 20.1328C25.8516 20.0156 25.9102 19.8594 25.9102 19.6641V17.4375H28.125C28.3203 17.4375 28.4766 17.3789 28.5938 17.2617C28.7109 17.1445 28.7695 16.9883 28.7695 16.793C28.7695 16.5977 28.7109 16.4414 28.5938 16.3242C28.4766 16.207 28.3203 16.1484 28.125 16.1484H25.9102V13.9336C25.9102 13.7383 25.8516 13.582 25.7344 13.4648C25.6172 13.3477 25.4609 13.2891 25.2656 13.2891C25.0703 13.2891 24.9141 13.3477 24.7969 13.4648C24.6797 13.582 24.6211 13.7383 24.6211 13.9336V16.1484H22.3945C22.207 16.1484 22.0508 16.207 21.9258 16.3242C21.8086 16.4414 21.75 16.5977 21.75 16.793C21.75 16.9883 21.8086 17.1445 21.9258 17.2617C22.0508 17.3789 22.207 17.4375 22.3945 17.4375H24.6211V19.6641C24.6211 19.8594 24.6797 20.0156 24.7969 20.1328C24.9141 20.25 25.0703 20.3086 25.2656 20.3086Z" fill="black"/>
+                        </svg>
+                        <span>תמונה במשקל של עד 4 MB</span>
+                        <InputFile id="@CatInputId" OnChange="OnImageUpload" accept="image/jpeg,image/png,image/webp" hidden/>
+                    </label>
+                }
+            }
+            else
+            {
+                <CustomInputSimple Value="@Cat.Content"
+                                   ValueChanged="v => { Cat.Content = v; OnContentChanged.InvokeAsync(); }"
+                                   OnFocus="OnSelect"
+                                   Placeholder="שם קטגוריה..."
+                                   MaxLength="16"/>
+            }
+        </div>
+
+    </div>
+
+    @* רדיו בטונס — ממוקמים ב-Flexbox טבעי מתחת לקופסה בלי קפיצות גובה *@
+    <div class="cat-type-radios">
+        <label class="radio-label" @onclick:stopPropagation="true">
+            <input type="radio"
+                   name="cat-type-@Index"
+                   checked="@(!Cat.IsImage)"
+                   disabled="@(!string.IsNullOrWhiteSpace(Cat.Content) && Cat.IsImage)"
+                   @onchange="() => { Cat.IsImage = false; OnContentChanged.InvokeAsync(); }" />
+            <svg width="12" height="13" viewBox="0 0 12 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11.088 3.456H10.098L9.576 1.296H6.318V10.71L7.83 11.25V12.24H3.258V11.25L4.77 10.71V1.296H1.512L0.99 3.456H0V0H11.088V3.456Z" fill="black"/>
+            </svg>
+
+        </label>
+        <label class="radio-label" @onclick:stopPropagation="true">
+            <input type="radio"
+                   name="cat-type-@Index"
+                   checked="@Cat.IsImage"
+                   disabled="@(!string.IsNullOrWhiteSpace(Cat.Content) && !Cat.IsImage)"
+                   @onchange="() => { Cat.IsImage = true; OnContentChanged.InvokeAsync(); }" />
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15.3059 9.57811C15.3154 10.2075 15.1604 10.6842 14.8408 11.008C14.5212 11.3364 14.037 11.5006 13.3882 11.5006H2.23971C1.70543 11.5006 1.29994 11.3478 1.02326 11.0422C0.751342 10.7412 0.605844 10.2942 0.586762 9.70125L3.16279 7.49829C3.30113 7.37514 3.44186 7.28392 3.58497 7.22463C3.72809 7.16534 3.87597 7.13569 4.02862 7.13569C4.18605 7.13569 4.34109 7.16762 4.49374 7.23147C4.65116 7.29533 4.80143 7.38655 4.94454 7.50513L6.18962 8.58609L9.25224 5.97263C9.40489 5.84037 9.5647 5.74458 9.73166 5.68529C9.9034 5.62144 10.0823 5.58951 10.2683 5.58951C10.4496 5.58951 10.6261 5.62372 10.7979 5.69213C10.9744 5.75599 11.1366 5.85177 11.2844 5.97948L15.3059 9.57811ZM5.15206 6.08894C4.85629 6.08894 4.58676 6.02052 4.34347 5.88369C4.10018 5.7423 3.90459 5.5553 3.75671 5.32269C3.6136 5.09008 3.54204 4.8301 3.54204 4.54276C3.54204 4.2691 3.6136 4.01596 3.75671 3.78335C3.90459 3.54618 4.10018 3.3569 4.34347 3.21551C4.58676 3.07412 4.85629 3.00342 5.15206 3.00342C5.44782 3.00342 5.71497 3.07412 5.95349 3.21551C6.19678 3.3569 6.38998 3.54618 6.53309 3.78335C6.68098 4.01596 6.75492 4.2691 6.75492 4.54276C6.75492 4.8301 6.68098 5.09008 6.53309 5.32269C6.38998 5.5553 6.19678 5.7423 5.95349 5.88369C5.71497 6.02052 5.44782 6.08894 5.15206 6.08894ZM2.17531 12C1.45975 12 0.918306 11.8267 0.550984 11.48C0.183661 11.138 0 10.6271 0 9.94755V2.05245C0 1.37286 0.183661 0.86203 0.550984 0.519954C0.918306 0.173318 1.45975 0 2.17531 0H13.8247C14.5498 0 15.0936 0.173318 15.4562 0.519954C15.8187 0.86203 16 1.37286 16 2.05245V9.94755C16 10.6271 15.8187 11.138 15.4562 11.48C15.0936 11.8267 14.5498 12 13.8247 12H2.17531ZM2.2254 10.8369H13.7746C14.099 10.8369 14.3494 10.7548 14.5259 10.5907C14.7024 10.4265 14.7907 10.1847 14.7907 9.86545V2.13455C14.7907 1.81072 14.7024 1.5667 14.5259 1.40251C14.3494 1.23831 14.099 1.15621 13.7746 1.15621H2.2254C1.90101 1.15621 1.65295 1.23831 1.48122 1.40251C1.30948 1.5667 1.22361 1.81072 1.22361 2.13455V9.86545C1.22361 10.1847 1.30948 10.4265 1.48122 10.5907C1.65295 10.7548 1.90101 10.8369 2.2254 10.8369Z" fill="black"/>
+            </svg>
+
+        </label>
+    </div>
+
+</div>
+
+@code {
+    [Parameter] public CategoryToSave Cat { get; set; }
+    [Parameter] public bool IsSelected { get; set; }
+    [Parameter] public int Index { get; set; }
+    [Parameter] public bool CanDelete { get; set; }
+    [Parameter] public EventCallback OnSelect { get; set; }
+    [Parameter] public EventCallback OnDelete { get; set; }
+    [Parameter] public EventCallback OnImageDelete { get; set; }
+    [Parameter] public EventCallback<InputFileChangeEventArgs> OnImageUpload { get; set; }
+    [Parameter] public EventCallback OnUploadClick { get; set; }
+    [Parameter] public EventCallback OnContentChanged { get; set; }
+    [Parameter] public string CatInputId { get; set; }
+
+    bool isHovered => true; /* אנחנו משתמשים ב-Hover מבוסס CSS טבעי בשביל הרדיו בטונס, בשביל הפח אנחנו משאירים שליטה נוחה */
+    bool isTrashHovered = false;
+
+    // תמיכה ב-Hover עבור כפתור הפח
+    private bool isHoveredBlazor = false;
+    protected override void OnInitialized()
+    {
+        // קוד אתחול במידת הצורך
+    }
+}

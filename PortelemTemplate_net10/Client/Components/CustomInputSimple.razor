@@ -1,4 +1,7 @@
 
+@* ספירת תווים בקטגוריות ובפריטים - לא חלק מEditForm *@
+
+
 <span>@length/@MaxLength</span>
 @* הצגת מספר התווים הנוכחי מתוך המקסימום המותר *@
 <input type="text"
@@ -9,7 +12,8 @@
        @oninput="OnInput"
        @onclick:stopPropagation="true"
        @onfocus="OnFocus"
-       @onblur="OnBlur"/>
+       @onblur="OnBlur"
+       style="max-width: 100px "/>
 @* בכל הקלדה עדכון הערך וספירת התווים *@
 @* בפוקוס על התיבה — בחירת הקטגוריה הרלוונטית *@
 @* משתנה לפי תקינות הערך בתיבה *@
@@ -22,7 +26,6 @@
     [Parameter] public int MaxLength { get; set; } = 16; // מקסימום תווים
     [Parameter] public int MinLength { get; set; } = 1; // מינימום תווים
     [Parameter] public string Placeholder { get; set; } = ""; // פלייסהולדר לתיבה - משתנה בין פריטים לקטגוריות
-    
     
     int length = 0; // מתעדכן בכל הקלדה - אורך הטקסט
     string inputClass = ""; //  good-input או dangerinput 
@@ -43,8 +46,7 @@
         }
     }
 
-   
-
+    
     async Task OnInput(ChangeEventArgs e) // נקראת בכל הקלדה - מקביל onkeyup בקומפוננטה CustomInputText
     {
         if (e.Value != null)

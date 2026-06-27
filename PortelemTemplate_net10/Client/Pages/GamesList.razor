@@ -23,7 +23,7 @@
     
     @if (isLoading)
     {
-        <p>Loading...</p>
+        <p>העמוד נטען...</p>
     }
 
     else
@@ -47,7 +47,7 @@
 
             </th>
             <th>פרסום
-                <Tooltip Text="אפשר לאחרים לפרסם" MaxWidth="180">
+                <Tooltip Text="אפשר לאחרים לפרסם" MaxWidth="130">
                     <div class="table-question-mark" aria-label="מה זה ״פרסום״" >
                         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="7.23242" cy="7.23242" r="6.73242" stroke="white"/>
@@ -83,9 +83,9 @@
             <td>
                 @if (game.CanPublish == false)
                 {
-                <Tooltip Text="יש לעמוד בתנאי הפרסום:<ul><li>מינימום 3 קטגוריות</li><li>מינימום 6 פריטים לקטגוריה</li></ul>"
-                         MaxWidth="160">
-                    <input type="checkbox" disabled aria-label="לא ניתן לפרסם" title="המשחק לא עומד בתנאי הפרסום"/>
+                    <Tooltip Text="יש לעמוד בתנאי הפרסום:<ul><li>מינימום 3 קטגוריות</li><li>מינימום 6 פריטים לקטגוריה</li></ul>"
+                             MaxWidth="200">
+                    <input type="checkbox" disabled aria-label="לא ניתן לפרסם"/>
                 </Tooltip>
                 }
                 else

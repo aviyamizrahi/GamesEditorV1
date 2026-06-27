@@ -1,32 +1,50 @@
 <style>
     .tooltip-wrapper {
-        position: relative;
+        position: relative; /* הופך את הדיב הזה לנקודת הייחוס */
         display: inline-block;
     }
 
     .tooltip-box {
         visibility: hidden;
         opacity: 0;
-        position: fixed;
         width: max-content;
+        height: max-content;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%); /* מזיז את הטולטיפ חצי מהרווח של עצמו שמאלה כדי שיהיה בול באמצע */
+        /* 3. מיקום מעל האובייקט (בתחתית שלו) */
+        top: 100%;
         font-family: "Open Sans";
         background-color: white;
         color: #333;
         padding: 4px 8px;
         margin: 5px 0;
         border-radius: 6px;
-        font-size: 0.85rem;
-        border:  1.8px solid black;
+        font-size: 14px;
+        border: 1.5px solid black;
         white-space: normal;
         box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        transition: opacity 0.2s;
         z-index: 1000;
     }
+    
+    .tooltip-box ul {
+        margin-bottom: 0;
+    }
 
+    /* משפרים את הטרנזקשן כדי שהמירכוז לא יישבר בריחוף */
     .tooltip-wrapper:hover .tooltip-box {
         visibility: visible;
         opacity: 1;
+        transform: translateX(-50%); /* שומר על המירכוז בזמן ה hover */
     }
+
+    .tooltip-wrapper:hover .tooltip-box.left { /* יש שימוש בקומפוננטת האקורדיון */
+        visibility: visible;
+        opacity: 1;
+        transform: translateX(-32px); 
+    }
+    
+
 </style>
 
 
@@ -34,14 +52,17 @@
     @ChildContent 
     @if (!string.IsNullOrEmpty(Text)) 
     {
-        <div class="tooltip-box" style="max-width: @(MaxWidth)px; margin-top: @(MarginTop)px">@((MarkupString)Text)</div>
+        <div class="tooltip-box @AdditionalClass" style="max-width: @(MaxWidth)px; margin-top: @(MarginTop)px;">
+            @((MarkupString)Text)
+        </div>
         // מתייחס לטקסט כhtml ולא טקסט רגיל
     }
 </div>
 
 @code {
-    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; } // האובייקט עליו יהיה מונח הטולטיפ
     [Parameter] public string Text { get; set; }
+    [Parameter] public string AdditionalClass { get; set; } = "";
     [Parameter] public int MaxWidth { get; set; } = 120; // ברירת מחדל של רוחב 120 פיקסלים
     [Parameter] public int MarginTop { get; set; } = 0; // שימוש במקומות ספציפיים לפי הצורך
 }

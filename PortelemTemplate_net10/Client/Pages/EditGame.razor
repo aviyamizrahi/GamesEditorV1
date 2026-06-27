@@ -227,59 +227,22 @@
             CategoryToSave cat = categories[i]; // שימוש יותר נוח בקטגוריה הנוכחית בלולאה
             string catInputId = "cat_" + i.ToString();  // שימוש באינדקס במקום ID כדי למנוע התנגשות בין קטגוריות ריקות
 
-            <div @key="cat" @onclick="() => SelectCategory(cat)" class="@(selectedCategory == cat ? "selected-category" : "")" style="border: 1px solid black; padding: 5px">
-                @* אם הקטגוריה הנוכחית היא זו שנבחרה — מוסיפים מחלקת עיצוב מודגשת, אחרת ללא מחלקה *@
-
-                <label>
-                    <input type="radio"
-                           name="cat-type-@i"
-                           checked="@(!cat.IsImage)"
-                           disabled="@(!string.IsNullOrWhiteSpace(cat.Content) && cat.IsImage)"
-                           @onchange="() => { cat.IsImage = false;  }"
-                           @onclick:stopPropagation="true"/>
-                    טקסט
-                </label>
-                <label>
-                    <input type="radio"
-                           name="cat-type-@i"
-                           checked="@cat.IsImage"
-                           disabled="@(!string.IsNullOrWhiteSpace(cat.Content) && !cat.IsImage)"
-                           @onchange="() => { cat.IsImage = true;  }"
-                           @onclick:stopPropagation="true"/>
-                    תמונה
-                </label>
-
-                @if (cat.IsImage)
-                {
-                    @if (!string.IsNullOrWhiteSpace(cat.Content)) // אם יש תמונה — הצג אותה עם אפשרות מחיקה
-                    {
-                        <img src="uploadedFiles/@cat.Content" alt="קטגוריה" style="width:80px; height:80px;"/>
-                        <button type="button" @onclick="() => DeleteCategoryImage(cat)"
-                                @onclick:stopPropagation="true">מחק תמונה</button>
-                    }
-                    else // אין תמונה עדיין — הצג כפתור העלאה
-                    {
-                        <button type="button" @onclick="() => TriggerFileInput(catInputId)"
-                                @onclick:stopPropagation="true">העלה תמונה</button>
-                        <InputFile id="@catInputId" OnChange="(e) => UploadCategoryFile(e, cat)" accept="image/*" hidden/>
-                    }
-                }
-                else // טקסט — הצג תיבת קלט
-                {
-                    <CustomInputSimple Value="@cat.Content"
-                                       ValueChanged="v => { cat.Content = v; MarkContentChanged(); }"
-                                       OnFocus="() => SelectCategory(cat)"
-                                       OnBlur="() => SelectCategory(cat)"
-                                       Placeholder="שם קטגוריה..."
-                                       MaxLength="16"/>
-                }
-                @* שולחת את הערך החדש לקומפוננטת אב כדי לעדכן את הטקסט החדש *@
-                @* בלחיצה על תיבת הטקסט הקטגוריה תיבחר *@
-
-                @* מחיקת קטגוריה — stopPropagation מונע בחירת הקטגוריה בעת לחיצה על מחק *@
-                <button @onclick="() => RemoveCategory(cat)" @onclick:stopPropagation="true"
-                        disabled="@(string.IsNullOrWhiteSpace(cat.Content) && categories.Count <= minCategories)">מחק</button>
-            </div>
+            <CategoryBox @key="cat"
+                          Cat="cat"
+                          IsSelected="@(selectedCategory == cat)"
+                          Index="i"
+                          CanDelete="@(!(string.IsNullOrWhiteSpace(cat.Content) && categories.Count <= minCategories))"
+                          OnSelect='() => SelectCategory(cat)'
+                          OnDelete='() => RemoveCategory(cat)'
+                          OnImageDelete="() => DeleteCategoryImage(cat)"
+                          OnImageUpload="(e) => UploadCategoryFile(e, cat)"
+                          OnUploadClick="() => TriggerFileInput(catInputId)"
+                          OnContentChanged="MarkContentChanged"
+                          CatInputId="@catInputId"/>
+            @* אם הקטגוריה הנוכחית היא זו שנבחרה — מוסיפים מחלקת עיצוב מודגשת, אחרת ללא מחלקה *@
+            @* שולחת את הערך החדש לקומפוננטת אב כדי לעדכן את הטקסט החדש *@
+            @* בלחיצה על תיבת הטקסט הקטגוריה תיבחר *@
+            @* מחיקת קטגוריה — stopPropagation מונע בחירת הקטגוריה בעת לחיצה על מחק *@
         }
 
         @* כפתור + קטגוריה — מוצג רק אם יש פחות מ-5 *@
